@@ -7,28 +7,32 @@ namespace PathLoad {
       /**
        * List of globs that we will scan (if we need to load a package).
        *
-       * @var array([package => string, glob => string])
+       * @var array
+       *   Array([package => string, glob => string])
        */
       protected $searchRules = [];
 
       /**
        * List of globs that have been scanned already.
        *
-       * @var array(string $glob => bool)
+       * @var array
+       *   Array(string $glob => bool)
        */
       protected $scanned = [];
 
       /**
        * List of best-known versions for each package.
        *
-       * @var array(string $majorName => array(string $version, string $baseDir)))
+       * @var array
+       *   Array(string $majorName => array(string $version, string $baseDir)))
        */
       protected $availablePackages = [];
 
       /**
        * List of package names that have already been resolved.
        *
-       * @var array(string $majorName => bool)
+       * @var array
+       *   Array(string $majorName => bool)
        */
       protected $resolvedPackages = [];
 
@@ -36,7 +40,8 @@ namespace PathLoad {
        * List of hints for class-loading. If someone tries to use a matching class, then
        * load the corresponding package.
        *
-       * @var array(string $prefix => array $packages)
+       * @var array
+       *   Array(string $prefix => array $packages)
        */
       protected $namespaces;
 
@@ -249,6 +254,7 @@ namespace PathLoad {
         [$major] = explode('.', $suffix, 2);
         return ["$prefix@$major", $prefix, $suffix];
       }
+
     }
 
     function doRequire(string $file) {
@@ -303,9 +309,7 @@ namespace PathLoad {
        * Loads the class file for a given class name.
        *
        * @param string $class The fully-qualified class name.
-       *
-       * @return mixed The mapped file name on success, or boolean false on
-       * failure.
+       * @return mixed The mapped file name on success, or boolean false on failure.
        */
       public function loadClass($class) {
         $prefix = $class;
@@ -329,9 +333,9 @@ namespace PathLoad {
        *
        * @param string $prefix The namespace prefix.
        * @param string $relative_class The relative class name.
-       *
-       * @return mixed Boolean false if no mapped file can be loaded, or the
-       * name of the mapped file that was loaded.
+       * @return mixed
+       *   Boolean false if no mapped file can be loaded, or the
+       *   name of the mapped file that was loaded.
        */
       protected function loadMappedFile($prefix, $relative_class) {
         if (isset($this->prefixes[$prefix]) === FALSE) {
@@ -359,6 +363,7 @@ namespace PathLoad {
         }
         return FALSE;
       }
+
     }
   }
 }
@@ -377,4 +382,3 @@ namespace {
 
   return pathload();
 }
-
