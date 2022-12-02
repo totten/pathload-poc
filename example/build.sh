@@ -6,7 +6,7 @@ function PHAR() {
  php -d phar.readonly=0 `which phar` "$@"
 }
 
-set-ex
+set -ex
 
 if [ ! -d "$DIST" ]; then
   mkdir "$DIST"
