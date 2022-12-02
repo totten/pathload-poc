@@ -1,11 +1,11 @@
 # PathLoad
 
-This is a proof-of-concept/test-bed to examine an alternative mechanism for loading dependencies.  In this model, classes are loaded from a
+This is a proof-of-concept/test-bed to examine an alternative mechanism for loading dependencies.  In this POC, classes are loaded from a
 _search-path_ with priority given based on _version number_.  The mechanism may be better suited for plugin/module development in platforms
 like WordPress, Drupal 7, and Backdrop -- platforms where `composer` is not canonical, and where site-builders may add new plugins by
 simply dropping them into the file-tree.
 
-## Usage (General Concept) 
+## Usage (General Concept)
 
 Suppose you are developing a plugin/module that requires a library called `cloud-file-io`. To use it, you would:
 
@@ -48,15 +48,15 @@ cd example
 Suppose you have a library `cloud-file-io@1.2.3`. You may add it in a few ways:
 
 * `./dist/cloud-file-io@1.2.3.php`: PHP source file. Loading this file should provide all the necessary classes (or setup a classloader).
-* `./dist/cloud-file-io@1.2.3.phar`: PHP archive file. It should setup autoloading via `.config/pathload.php` and `composer.json` (or using a custom "stub").
-* `./dist/cloud-file-io@1.2.3`: Local directory. It should setup autoloading via `.config/pathload.php` and `composer.json`.
+* `./dist/cloud-file-io@1.2.3.phar`: PHP archive file. It should setup a classoader using `.config/pathload.php` and/or `composer.json` (or using a custom "stub").
+* `./dist/cloud-file-io@1.2.3`: Local directory. It should setup a classloader using `.config/pathload.php` and/or `composer.json`.
 
 ## Discussion
 
 Topics one might consider for this POC:
 
-* How does it compare to using to status-quo? To idealized composer? To PEAR? To `LD_LIBRARY_PATH`?
-* What is the most realistic path to updating shared libraries in a WP/D7/BD-style environment?
+* How does it compare to status-quo? To using idealized composer? To PEAR? To `LD_LIBRARY_PATH`?
+* What would it look like to have a site-wide "package update" process (e.g. deploying security updates)?
 * What would be involved with loading existing/public libraries from the packagist feed? How important is, eg, "php-scoper" to dealing with the "major-version" 'issue?
   Do we need to support existing/public libraries?
-* How significant is the performance impact if every pageload performs a `glob("*@*")` across each `$PRJ/dist` folder?
+* How significant is the performance impact if every pageload performs a `glob("*@*")` on each `$PLUGIN/dist`? What's the overhead of reading from PHARs?
