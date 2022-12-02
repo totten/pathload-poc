@@ -119,9 +119,9 @@ namespace PathLoad {
        */
       protected function loadPackagesByNamespace(string $delim, array $classParts): void {
         array_pop($classParts);
-        $namespace = '';
         do {
           $foundPackages = FALSE;
+          $namespace = '';
           foreach ($classParts as $nsPart) {
             $namespace .= $nsPart . $delim;
             if (isset($this->namespaces[$namespace])) {
