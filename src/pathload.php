@@ -159,27 +159,31 @@ namespace PathLoad {
       }
 
       protected function useMetadataFiles(string $dir): void {
+        $bootFile = "$dir/.config/pathload.php";
+        if ($bootFile) {
+          require $bootFile;
+        }
+
         $composerJsonFile = "$dir/composer.json";
-        if (!file_exists($composerJsonFile)) {
-          return;
-        }
-        $composerJsonData = file_get_contents($composerJsonFile);
-        $compserJson = \json_decode($composerJsonData, TRUE);
-        if (!empty($compserJson['autoload']['include'])) {
-          // Would it be better to just warn? We can't really do the same semantics, but this
-          // arguably might help in some cases.
-          foreach ($compserJson['autoload']['include'] as $file) {
-            doRequire($dir . '/' . $file);
+        if (file_exists($composerJsonFile)) {
+          $composerJsonData = file_get_contents($composerJsonFile);
+          $compserJson = \json_decode($composerJsonData, TRUE);
+          if (!empty($compserJson['autoload']['include'])) {
+            // Would it be better to just warn? We can't really do the same semantics, but this
+            // arguably might help in some cases.
+            foreach ($compserJson['autoload']['include'] as $file) {
+              doRequire($dir . '/' . $file);
+            }
           }
-        }
-        foreach ($compserJson['autoload']['psr-4'] ?? [] as $prefix => $relPaths) {
-          foreach ($relPaths as $relPath) {
-            $this->psr4Classloader->addNamespace($prefix, $dir . '/' . $relPath);
+          foreach ($compserJson['autoload']['psr-4'] ?? [] as $prefix => $relPaths) {
+            foreach ($relPaths as $relPath) {
+              $this->psr4Classloader->addNamespace($prefix, $dir . '/' . $relPath);
+            }
           }
-        }
-        foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
-          error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
-          // $this->psr4Classloader->addNamespace($prefix, $relPath);
+          foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
+            error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
+            // $this->psr4Classloader->addNamespace($prefix, $relPath);
+          }
         }
       }
 
