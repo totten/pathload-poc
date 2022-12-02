@@ -12,6 +12,8 @@ if [ ! -d "$DIST" ]; then
   mkdir "$DIST"
 fi
 
+cp ../src/pathload.php dist/pathload.php
+
 for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'extralib@1.0.0' ; do 
 #for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'extralib@1.0.0' ; do 
   pushd "lib/$pkg"

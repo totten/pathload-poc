@@ -2,7 +2,7 @@
 <?php
 
 // Enable Pathload API. Use fluent style.
-($GLOBALS['_PathLoad'] ?? require __DIR__ . '/../src/pathload.php')
+($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')
   // Add "./dist" to the search-path.
   ->append(__DIR__ . '/dist')
   // We specifically want to load 'extralib@1' right away.
