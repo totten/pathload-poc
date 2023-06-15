@@ -40,7 +40,14 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
     * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
-## Example projec
+## Key observations
+
+* The `pathload.php` adapter (aka `$_PathLoad` aka `pathload()`) is only initialized one time.
+* The pathload object allows you to register metadata. This should be done very early (*before classes are actually needed*).
+* It integrates into the classloader - it will not load anything until there is a live requirement for a specific class.
+    * Ex: ___If___ someone instantiates a class from the namespace `CloudFileIO\`, ___then___ it will use `cloud-file-io@1.2.3.phar`. ___Otherwise___, the PHAR file is ignored.
+
+## Example project
 
 There is a small [example project](./example) in this repo. You can see it in action as:
 
