@@ -40,12 +40,17 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
     * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
-## Key observations
+## Important notes
 
 * The `pathload.php` adapter (aka `$_PathLoad` aka `pathload()`) is only initialized one time.
 * The pathload object allows you to register metadata. This should be done very early (*before classes are actually needed*).
 * It integrates into the classloader - it will not load anything until there is a live requirement for a specific class.
     * Ex: ___If___ someone instantiates a class from the namespace `CloudFileIO\`, ___then___ it will use `cloud-file-io@1.2.3.phar`. ___Otherwise___, the PHAR file is ignored.
+* There is an empirical question about the performance of this mechanism.
+    * That's why we need a proof-of-concept.
+    * Maybe performance is good. The PHP interpreter is pretty fast these days. Potentially-expensive steps (like `glob()` or `require_once`) only run if you actually need them.
+    * Performance is probably not as good as composer, esp compared to classmap optimization.
+    * It might be improved with a bit of caching/scanning. However, the caching mechanism depends on the local environment. I would probably organize this as an environment-specific optimization. (Ex: Create "pathload-wp" plugin to optimize within WP environment; create "pathload_d7" module to optimize within D7 environment. These would be optional things to squeeze a few more milliseconds out of each pageview.)
 
 ## Example project
 
@@ -61,9 +66,9 @@ cd example
 ./run-all.sh
 ```
 
-## File Layout
+## Library packaging
 
-Suppose you have a library `cloud-file-io@1.2.3`. You may add it in a few ways:
+Let's consider our example library, `cloud-file-io@1.2.3`. The emphasis here has been placed on PHAR packages. However, PathLoad POC can read libraries in a few formats:
 
 * `./dist/cloud-file-io@1.2.3.php`: PHP source file. Loading this file should provide all the necessary classes (or setup a classloader).
 * `./dist/cloud-file-io@1.2.3.phar`: PHP archive file. It should setup a classoader using `.config/pathload.php` and/or `composer.json` (or using a custom "stub").
