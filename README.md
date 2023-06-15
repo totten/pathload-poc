@@ -1,24 +1,34 @@
-# PathLoad
+# PathLoad PHP (Proof of concept)
 
-This is a proof-of-concept/test-bed to examine an alternative mechanism for loading dependencies.  In this POC, classes are loaded from a
-_search-path_ with priority given based on _version number_.  The mechanism may be better suited for plugin/module development in platforms
-like WordPress, Drupal 7, and Backdrop -- platforms where `composer` is not canonical, and where site-builders may add new plugins by
-simply dropping them into the file-tree.
+This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*in the sense of WordPress plugins, Drupal 7 modules, Backdrop modules, etc*).
 
-## Usage (General Concept)
+Classes are loaded from a _search-path_ with priority based on _version number_. For example, the *search-path* might list 3 directories. Each directory has versioned PHAR libraries.
 
-Suppose you are developing a plugin/module that requires a library called `cloud-file-io`. To use it, you would:
+* `/var/www/app/addon-1/dist/`
+    * `console-lib@2.0.0.phar`
+    * `cloud-file-io@1.2.3.phar`
+* `/var/www/app/addon-2/dist/`
+    * `cloud-file@1.1.0.phar`
+    * `yaml-util@1.0.0.phar`
+* `/usr/local/share/php-updates/`
+    * `yaml-util@1.0.5.phar`
 
-1. In your plugin source-tree, add a folder `./dist/` for distributable libraries, such as:
-    * `./dist/cloud-file-io@1.2.3.phar` is a copy of the `cloud-file-io` (named for its specific version `1.2.3`)
-    * `./dist/pathload.php` is a polyfill that adds support for the PathLoad API.
-2. The plugin/module has a mainfile. In this file, you should:
-    * Activate PathLoad. Add `./dist/` to the search-path.
+The challenge for these PHP application-modules is that they must load one version of any library, and their deployment tools (`wget`, `svn`, `git`, `drush dl`, etc) do not reconcile library versions.
+
+PathLoad is a protocol where each addon may independently distribute its preferred libraries -- but old libraries will yield to new replacements. It works even if the host application (*WP, D7*) lacks support, and it allows multiple developers to ship the same library. It also means that site-builders and security-tools may deploy updated libraries without modifying the application-modules -- you simply copy an updated library onto the search-path.
+
+## Usage (General concept)
+
+Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io`. Here's how to use it:
+
+1. Download `cloud-file-io` as a PHAR file (eg `cloud-file-io@1.2.3.phar`)
+2. Copy `cloud-file-io@1.2.3.phar` and `pathload.php` into your codebase (`$MY_MODULE/dist/`)
+3. In your application-module, add 2 lines of code to activate the PHAR:
         ```php
+        // Add your `dist/` folder to PathLoad:
         ($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')->append(__DIR__ . '/dist');
-        ```
-    * Declare that your module uses some classes from `cloud-file-io` v1.x:
-        ```php
+ 
+        // Declare that you wish to use `cloud-file-io` v1.x
         pathload()->addPackage('CloudFileIO\\', 'cloud-file-io@1');
         ```
 3. Now, anywhere in your plugin, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
@@ -26,12 +36,11 @@ Suppose you are developing a plugin/module that requires a library called `cloud
     * If your plugin is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
     * If another plugin includes a newer version (`cloud-file-io@1.5.0.phar`), then that will be loaded instead.
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
-    * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0.
-      But 2.0.0 may not automatically replace 1.5.0.
+    * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
-## Usage (Example)
+## Usage (Attached example)
 
-There is a small example project in this repo. You can see it in action as:
+There is a small [example project](./example) in this repo. You can see it in action as:
 
 ```bash
 cd example
