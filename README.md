@@ -17,20 +17,22 @@ The challenge for these PHP application-modules is that they must load one versi
 
 PathLoad is a protocol where each addon may independently distribute its preferred libraries -- but old libraries will yield to new replacements. It works even if the host application (*WP, D7*) lacks support, and it allows multiple developers to ship the same library. It also means that site-builders and security-tools may deploy updated libraries without modifying the application-modules -- you simply copy an updated library onto the search-path.
 
-## Usage (General concept)
+## Usage
 
 Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io`. Here's how to use it:
 
 1. Download `cloud-file-io` as a PHAR file (eg `cloud-file-io@1.2.3.phar`)
 2. Copy `cloud-file-io@1.2.3.phar` and `pathload.php` into your codebase (`$MY_MODULE/dist/`)
 3. In your application-module, add 2 lines of code to activate the PHAR:
-        ```php
-        // Add your `dist/` folder to PathLoad:
-        ($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')->append(__DIR__ . '/dist');
+
+    ```php
+    // Add your `dist/` folder to PathLoad:
+    ($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')->append(__DIR__ . '/dist');
  
-        // Declare that you wish to use `cloud-file-io` v1.x
-        pathload()->addPackage('CloudFileIO\\', 'cloud-file-io@1');
-        ```
+    // Declare that you wish to use `cloud-file-io` v1.x
+    pathload()->addPackage('CloudFileIO\\', 'cloud-file-io@1');
+    ```
+
 3. Now, anywhere in your plugin, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
 4. At runtime, when using `\CloudFileIO\Amazon\S3`, it will find the best-available version of `cloud-file-io.phar`.
     * If your plugin is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
@@ -38,7 +40,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
     * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
-## Usage (Attached example)
+## Example projec
 
 There is a small [example project](./example) in this repo. You can see it in action as:
 
