@@ -42,7 +42,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
 
 ## Important notes
 
-* The `pathload.php` adapter (aka `$_PathLoad` aka `pathload()`) is only initialized one time.
+* The pathload object (aka `pathload.php` aka `$_PathLoad` aka `pathload()`) is only initialized one time.
 * The pathload object allows you to register metadata. This should be done very early (*before classes are actually needed*).
 * It integrates into the classloader - it will not load anything until there is a live requirement for a specific class.
     * Ex: ___If___ someone instantiates a class from the namespace `CloudFileIO\`, ___then___ it will use `cloud-file-io@1.2.3.phar`. ___Otherwise___, the PHAR file is ignored.
@@ -51,6 +51,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     * Maybe performance is good. The PHP interpreter is pretty fast these days. Potentially-expensive steps (like `glob()` or `require_once`) only run if you actually need them.
     * Performance is probably not as good as composer, esp compared to classmap optimization.
     * It might be improved with a bit of caching/scanning. However, the caching mechanism depends on the local environment. I would probably organize this as an environment-specific optimization. (Ex: Create "pathload-wp" plugin to optimize within WP environment; create "pathload_d7" module to optimize within D7 environment. These would be optional things to squeeze a few more milliseconds out of each pageview.)
+* This resolves conflicts between `MINOR` and `PATCH` versions -- but not `MAJOR` versions. There is more discussion ("Composer Bridge") about ways to tackle that.
 
 ## Example project
 
