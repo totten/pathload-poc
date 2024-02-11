@@ -3,6 +3,10 @@
 namespace PathLoad {
   if (!class_exists('PathLoad')) {
 
+    function doRequire(string $file) {
+      return require $file;
+    }
+
     class PathLoad {
       /**
        * List of globs that we will scan (if we need to load a package).
@@ -153,8 +157,8 @@ namespace PathLoad {
           $compserJson = \json_decode($composerJsonData, TRUE);
           if (!empty($compserJson['autoload']['include'])) {
             // Would it be better to just warn? We can't really do the same semantics, but this
-        // arguably might help in some cases.
-        foreach ($compserJson['autoload']['include'] as $file) {
+            // arguably might help in some cases.
+            foreach ($compserJson['autoload']['include'] as $file) {
               doRequire($dir . '/' . $file);
             }
           }
@@ -166,7 +170,7 @@ namespace PathLoad {
           foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
             error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
             // $this->psr4Classloader->addNamespace($prefix, $relPath);
-      }
+          }
         }
       }
       protected function resolve(string $package): ?array {
@@ -206,7 +210,7 @@ namespace PathLoad {
           }
           else {
             // Not for us.
-        continue;
+            continue;
           }
           if (!isset($this->availablePackages[$majorName]) || version_compare($this->availablePackages[$majorName]['version'], $version, '<')) {
             $this->availablePackages[$majorName] = ['name' => $name, 'version' => $version, 'file' => $file, 'type' => $type];
@@ -228,11 +232,6 @@ namespace PathLoad {
         return ["$prefix@$major", $prefix, $suffix];
       }
     }
-    function doRequire(string $file) {
-      return require $file;
-    }
-    
-
 
     class Psr4Autoloader {
       protected $prefixes = [];
@@ -326,7 +325,7 @@ namespace PathLoad {
         return FALSE;
       }
     }
-    
+
 
   }
 }

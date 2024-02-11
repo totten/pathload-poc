@@ -2,6 +2,9 @@
 
 namespace PathLoad {
   if (!class_exists('PathLoad')) {
+    function doRequire(string $file) {
+      return require $file;
+    }
     class PathLoad {
       protected $searchRules = [];
       protected $scanned = [];
@@ -92,7 +95,7 @@ namespace PathLoad {
           $composerJsonData = file_get_contents($composerJsonFile);
           $compserJson = \json_decode($composerJsonData, TRUE);
           if (!empty($compserJson['autoload']['include'])) {
-                            foreach ($compserJson['autoload']['include'] as $file) {
+                                    foreach ($compserJson['autoload']['include'] as $file) {
               doRequire($dir . '/' . $file);
             }
           }
@@ -103,7 +106,7 @@ namespace PathLoad {
           }
           foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
             error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
-                  }
+                      }
         }
       }
       protected function resolve(string $package): ?array {
@@ -140,7 +143,7 @@ namespace PathLoad {
             $type = 'dir';
           }
           else {
-                    continue;
+                        continue;
           }
           if (!isset($this->availablePackages[$majorName]) || version_compare($this->availablePackages[$majorName]['version'], $version, '<')) {
             $this->availablePackages[$majorName] = ['name' => $name, 'version' => $version, 'file' => $file, 'type' => $type];
@@ -156,9 +159,6 @@ namespace PathLoad {
         [$major] = explode('.', $suffix, 2);
         return ["$prefix@$major", $prefix, $suffix];
       }
-    }
-    function doRequire(string $file) {
-      return require $file;
     }
     class Psr4Autoloader {
       protected $prefixes = [];
