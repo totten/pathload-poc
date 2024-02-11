@@ -5,12 +5,25 @@ namespace PathLoad\Build;
 
 define('PATHLOAD_VERSION', 0);
 
+/**
+ * Ex: prjdir('dist')
+ * Ex: prjdir('example/dist')
+ * Ex: prjdir('example', 'dist')
+ *
+ * @param ...$parts
+ * @return string
+ */
+function prjdir(...$parts): string {
+  $prjdir = dirname(__DIR__);
+  array_unshift($parts, $prjdir);
+  return implode('/', $parts);
+}
+
 function main() {
   if (!is_dir('dist')) {
     mkdir('dist');
   }
-  $dir = __DIR__;
-  $dist = "$dir/dist";
+  $dist = prjdir('dist');
   $version = PATHLOAD_VERSION;
 
   $full = evalTemplate(FALSE);
@@ -50,7 +63,7 @@ function identity($x) {
 }
 
 function read($file): string {
-  return file_get_contents(__DIR__ . '/src/' . $file);
+  return file_get_contents(prjdir('src', $file));
 }
 
 function stripComments(string $phpSource): string {
