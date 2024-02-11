@@ -14,7 +14,7 @@ namespace {
     $GLOBALS['_PathLoad']->register();
   }
 
-  function pathload(): \PathLoad\PathLoad {
+  function pathload(): \PathLoad\PathLoadInterface {
     return $GLOBALS['_PathLoad'];
   }
 

@@ -9,14 +9,31 @@ function main() {
   }
   $dir = __DIR__;
 
-  $template = file_get_contents($dir . '/src/template.php');
-  $phpSources = [
+  $template = read('template.php');
+  $full = evalTemplate($template, [
     "\n",
-    file_get_contents($dir . '/src/funcs.php'),
-    file_get_contents($dir . '/src/PathLoad.php'),
-    file_get_contents($dir . '/src/Psr4Autoloader.php'),
-  ];
+    read('funcs.php'),
+    read('PathLoadInterface.php'),
+    read('PathLoad.php'),
+    read('Psr4Autoloader.php'),
+  ]);
+  file_put_contents("$dir/dist/pathload.php", $full);
 
+  $min = trimWhitespace(evalTemplate($template, [
+    "\n",
+    stripComments(read('funcs.php')),
+    read('PathLoadInterface.php'),
+    stripComments(read('PathLoad.php')),
+    stripComments(read('Psr4Autoloader.php')),
+  ]));
+  file_put_contents("$dir/dist/pathload.min.php", $min);
+}
+
+function read($file): string {
+  return file_get_contents(__DIR__ . '/src/' . $file);
+}
+
+function evalTemplate(string $template, array $phpSources): string {
   $makeClasses = function ($m) use ($phpSources) {
     $classes = '';
     foreach ($phpSources as $phpSource) {
@@ -25,9 +42,7 @@ function main() {
     $classes = trimWhitespace($classes);
     return $classes;
   };
-  $full = preg_replace_callback(';\n(\s*)//CLASSES//;', $makeClasses, $template);
-  file_put_contents("$dir/dist/pathload.php", $full);
-  file_put_contents("$dir/dist/pathload.min.php", trimWhitespace(stripComments($full)));
+  return preg_replace_callback(';\n(\s*)//CLASSES//;', $makeClasses, $template);
 }
 
 function stripComments(string $phpSource): string {
@@ -94,7 +109,7 @@ function indent(string $phpSource, string $prefix): string {
 function normalize(string $phpSource, string $prefix): string {
   $phpSource = trimWhitespace(indent($phpSource, $prefix));
   $phpSource = str_replace("<" . "?php", "", $phpSource);
-  $phpSource = str_replace("namespace PathLoad;", "", $phpSource);
+  $phpSource = preg_replace("~namespace PathLoad[\w\\\]*;~", "", $phpSource);
   $phpSource = trim($phpSource, "\n") . "\n";
   return $phpSource;
 }

@@ -27,10 +27,10 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
 
     ```php
     // Add your `dist/` folder to PathLoad:
-    ($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')->append(__DIR__ . '/dist');
+    ($GLOBALS['_PathLoad'] ?? require __DIR__ . '/dist/pathload.php')->addPackageDir(__DIR__ . '/dist');
  
     // Declare that you wish to use `cloud-file-io` v1.x
-    pathload()->addPackage('CloudFileIO\\', 'cloud-file-io@1');
+    pathload()->addPackage('cloud-file-io@1', 'CloudFileIO\\');
     ```
 
 3. Now, anywhere in your plugin, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
