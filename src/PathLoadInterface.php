@@ -4,7 +4,7 @@
  * @method PathLoadInterface addSearchDir(string $baseDir)
  * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
  * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
- * @method PathLoadInterface addAll(array $all, string $baseDir = '')
+ * @method PathLoadInterface import(array $all, string $baseDir = '')
  */
 interface PathLoadInterface {
 

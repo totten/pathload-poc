@@ -136,7 +136,7 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * Add a specific package. This is similar to `append()` but requires hints -- which allow better behavior:
+   * Add a specific package.
    *
    * - By giving the `$namespaces`+`$package`, we can integrate with the autoloader - we will auto-load a package when the relevant namespace(s) are used.
    * - By giving the `$package`+`$baseDir`, we defer the need to `glob()` folders (until/unless someone actually needs $package).
@@ -146,6 +146,8 @@ class PathLoad implements \PathLoadInterface {
    * @param string|array $namespaces
    *   Ex: 'foobar@1'
    * @param string|NULL $baseDir
+   *   (EXPERIMENTAL) Add a search-rule just for this package. In theory, if used systemically, this would mean
+   *   fewer calls to `glob()` for unused packages.
    *   Ex: '/var/www/myapp/lib'
    */
   public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
@@ -188,7 +190,7 @@ class PathLoad implements \PathLoadInterface {
    * @param string $baseDir
    * @return \PathLoadInterface
    */
-  public function addAll(array $all, string $baseDir = ''): \PathLoadInterface {
+  public function import(array $all, string $baseDir = ''): \PathLoadInterface {
     foreach ($all['searchDirs'] ?? [] as $tuple) {
       $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
     }
@@ -202,11 +204,12 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * If $path is relative, then add a prefix to it.
-   *
    * @param string|null $path
    * @param string|null $prefix
    * @return string
+   *   If $path is absolute, then return that.
+   *   If $path is relative, then prepend the $prefix.
+   *
    */
   protected function withBaseDir(?string $path, ?string $prefix): string {
     if ($path === NULL || $prefix === NULL) {
