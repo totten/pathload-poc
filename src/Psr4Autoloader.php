@@ -1,22 +1,13 @@
 <?php
-namespace PathLoad;
+namespace PathLoad\Vn;
 
 class Psr4Autoloader {
 
-  protected $prefixes = [];
-
-  public function register() {
-    spl_autoload_register([$this, 'loadClass']);
-  }
-
   /**
-   * Unregister loader with SPL autoloader stack.
-   *
-   * @return void
+   * @var array
+   * @internal
    */
-  public function unregister() {
-    spl_autoload_unregister([$this, 'loadClass']);
-  }
+  public $prefixes = [];
 
   /**
    * Adds a base directory for a namespace prefix.

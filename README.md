@@ -28,7 +28,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     ```php
     // Add your `dist/` folder to PathLoad:
     ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php')->addPackageDir(__DIR__ . '/dist');
- 
+
     // Declare that you wish to use `cloud-file-io` v1.x
     pathload()->addPackage('cloud-file-io@1', 'CloudFileIO\\');
     ```
@@ -52,6 +52,22 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     * Performance is probably not as good as composer, esp compared to classmap optimization.
     * It might be improved with a bit of caching/scanning. However, the caching mechanism depends on the local environment. I would probably organize this as an environment-specific optimization. (Ex: Create "pathload-wp" plugin to optimize within WP environment; create "pathload_d7" module to optimize within D7 environment. These would be optional things to squeeze a few more milliseconds out of each pageview.)
 * This resolves conflicts between `MINOR` and `PATCH` versions -- but not `MAJOR` versions. There is more discussion ("Composer Bridge") about ways to tackle that.
+* The intention is for `pathload.php` to change very, very rarely. However, it is also a new design, and some initial iteration
+  is... not unlikely. This is a challenge because the `pathload.php` is also intended to be copied around. In anticipation,
+  it includes a protocol for new versions to supercede old versions. This can be seen the expression:
+
+    ```php
+    ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php');
+    ($GLOBALS['_PathLoad'][240201] ?? require __DIR__ . '/dist/pathload.php');
+    ($GLOBALS['_PathLoad'][240202] ?? require __DIR__ . '/dist/pathload.php');
+    ```
+
+    In this expression, we request an instance of PathLoad that is compliant with v0 (or v240201 or v240202):
+
+    * If it's already available, then no work is required.
+    * If it's not available, then it will load your preferred copy of `pathload.php`. This will have
+      an opportunity to replace the `_PathLoad` (and convert any metadata).
+
 
 ## Example project
 
@@ -106,6 +122,6 @@ But there are considerations:
 
 * Micro-Libraries: Some libraries have pretty small scopes (eg `symfony/polyfill-ctype`).  When using `composer`, these microlibraries
   may be used -- but you don't think about them. However, if you took the exact same libraries and managed PHARs, then they would become more
-  apparent -- it doesn't seem ideal to have a dozen small PHARs. 
+  apparent -- it doesn't seem ideal to have a dozen small PHARs.
 
 Of course, I'm not even certain if a bridge is needed...

@@ -1,13 +1,7 @@
 <?php
 
-namespace PathLoad {
-  if (!class_exists('PathLoad')) {
-
-    function doRequire(string $file) {
-      return require $file;
-    }
-
-    
+namespace {
+  if (!interface_exists('PathLoadInterface')) {
     /**
      * @method PathLoadInterface addSearchDir(string $baseDir)
      * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
@@ -20,9 +14,49 @@ namespace PathLoad {
       // This will give us wiggle-room while also giving type-hints in average case.
 
     }
+  }
+}
 
-    class PathLoad implements PathLoadInterface {
-      public $version = '0.1';
+namespace PathLoad\V0 {
+  if (!class_exists('PathLoad')) {
+    function doRequire(string $file) {
+      return require $file;
+    }
+    /**
+     * A facade for returning version-compliant flavors of PathLoad.
+     *
+     * $x[0] ==> PathLoad instance compatible with v0
+     * $x[1] ==> PathLoad instance compatible with v1
+     * $x[12] ==> PathLoad instance compatible with v12
+     * $x['top'] ==> Whatever version is latest/current
+     * $x->top ==> Whatever version is latest/current
+     */
+    class PathLoadVersions implements \ArrayAccess {
+      public $top;
+      public function __construct($top) {
+        $this->top = $top;
+      }
+      public function offsetExists($version) {
+        return ($version === 'top' || $version <= $this->top->version);
+      }
+      public function offsetGet($version) {
+        if ($version === 'top' || $version <= $this->top->version) {
+          return $this->top;
+        }
+        return NULL;
+      }
+      public function offsetSet($offset, $value) {
+        error_log("Cannot overwrite PathLoad[$offset]");
+      }
+      public function offsetUnset($offset) {
+        error_log("Cannot remove PathLoad[$offset]");
+      }
+    }
+    class PathLoad implements \PathLoadInterface {
+      /**
+       * @var null|int
+       */
+      public $version;
       /**
        * List of globs that we will scan (if we need to load a package).
        *
@@ -31,6 +65,7 @@ namespace PathLoad {
        *
        * @var array
        *   Array([package => string, glob => string])
+       * @internal
        */
       public $availableSearchRules = [];
       /**
@@ -38,6 +73,7 @@ namespace PathLoad {
        *
        * @var array
        *   Array(string $glob => [package => string, glob => string])
+       * @internal
        */
       public $resolvedSearchRules = [];
       /**
@@ -47,6 +83,7 @@ namespace PathLoad {
        *
        * @var array
        *   Array(string $majorName => [name => string, version => string, file => string type => string])
+       * @internal
        */
       public $availablePackages = [];
       /**
@@ -54,6 +91,7 @@ namespace PathLoad {
        *
        * @var array
        *   Array(string $majorName => [name => string, version => string, file => string type => string])
+       * @internal
        */
       public $resolvedPackages = [];
       /**
@@ -65,17 +103,49 @@ namespace PathLoad {
        * @var array
        *   Array(string $prefix => [string $package => string $package])
        *   Ex: ['Super\Cloud\IO\' => ['cloud-io@1' => 'cloud-io@1']
+       * @internal
        */
       public $availableNamespaces;
       /**
        * @var Psr4Autoloader
+       * @internal
        */
       public $psr4Classloader;
-      public function __construct(array $baseDirs = []) {
-        $this->psr4Classloader = new Psr4Autoloader();
-        foreach ($baseDirs as $baseDir) {
-          $this->addSearchDir($baseDir);
+      /**
+       * @param int $version
+       *   Identify the version being instantiated.
+       * @param \PathLoadInterface|null $old
+       *   If this instance is a replacement for an older instance, then it will be passed in.
+       * @return \ArrayAccess
+       *   Versioned work-a-like array.
+       */
+      public static function create(int $version, ?\PathLoadInterface $old = NULL) {
+        if ($old !== NULL) {
+          $old->unregister();
         }
+        $new = new static();
+        $new->version = $version;
+        // The exact protocol for assimilating $old instances may need change.
+        // This seems like a fair guess as long as old properties are forward-compatible.
+
+        if ($old === NULL) {
+          $baseDirs = getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : [];
+          foreach ($baseDirs as $baseDir) {
+            $new->addSearchDir($baseDir);
+          }
+          $new->psr4Classloader = new Psr4Autoloader();
+        }
+        else {
+          // TIP: You might use $old->version to decide what to use.
+          $new->availableSearchRules = $old->availableSearchRules;
+          $new->resolvedSearchRules = $old->resolvedSearchRules;
+          $new->availablePackages = $old->availablePackages;
+          $new->resolvedPackages = $old->resolvedPackages;
+          $new->availableNamespaces = $old->availableNamespaces;
+          $new->psr4Classloader = $old->psr4Classloader;
+        }
+        $new->register();
+        return new PathLoadVersions($new);
       }
       /**
        * To load $package, you search files matching $glob.
@@ -87,7 +157,7 @@ namespace PathLoad {
        *   Ex: '/var/www/lib/*@*' or '/var/www/lib/cloud-io@1*.phar'
        * @return $this
        */
-      public function addSearchRule(string $package, string $glob): PathLoadInterface {
+      public function addSearchRule(string $package, string $glob): \PathLoadInterface {
         if (!isset($this->resolvedSearchRules[$glob])) {
           $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
         }
@@ -99,7 +169,7 @@ namespace PathLoad {
        * @param string $baseDir
        *   The path to a base directory (e.g. `/var/www/myapp/lib`) which contains many packages (e.g. `foo@1.2.3.phar` or `bar@4.5.6/autoload.php`).
        */
-      public function addSearchDir(string $baseDir): PathLoadInterface {
+      public function addSearchDir(string $baseDir): \PathLoadInterface {
         return $this->addSearchRule('*', "$baseDir/*@*");
       }
       /**
@@ -115,7 +185,7 @@ namespace PathLoad {
        * @param string|NULL $baseDir
        *   Ex: '/var/www/myapp/lib'
        */
-      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): PathLoadInterface {
+      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
         $this->addPackageNamespace($package, $namespaces);
         if ($baseDir) {
           $glob = strpos($package, '@') === FALSE
@@ -135,7 +205,7 @@ namespace PathLoad {
        * @param string|string[] $namespaces
        *   Ex: 'Super\Cloud\IO\'
        */
-      public function addPackageNamespace(string $package, $namespaces): PathLoadInterface {
+      public function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
         $namespaces = (array) $namespaces;
         foreach ($namespaces as $namespace) {
           $this->availableNamespaces[$namespace][$package] = $package;
@@ -149,9 +219,9 @@ namespace PathLoad {
        *   Ex: ['searchDirs' => [ ['/var/www/lib'], ['/usr/local/share/php'] ]]
        *   Ex: ['packages' => [ ['cloud-io@1', '] ]]
        * @param string $baseDir
-       * @return \PathLoad\PathLoadInterface
+       * @return \PathLoadInterface
        */
-      public function addAll(array $all, string $baseDir = ''): PathLoadInterface {
+      public function addAll(array $all, string $baseDir = ''): \PathLoadInterface {
         foreach ($all['searchDirs'] ?? [] as $tuple) {
           $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
         }
@@ -185,8 +255,15 @@ namespace PathLoad {
       /**
        * Register the autoloader.
        */
-      public function register(): PathLoadInterface {
+      public function register(): \PathLoadInterface {
         spl_autoload_register([$this, 'loadClass']);
+        return $this;
+      }
+      /**
+       * Un-register the autoloader.
+       */
+      public function unregister(): \PathLoadInterface {
+        spl_autoload_unregister([$this, 'loadClass']);
         return $this;
       }
       /**
@@ -373,20 +450,12 @@ namespace PathLoad {
         return ["$prefix@$major", $prefix, $suffix];
       }
     }
-
     class Psr4Autoloader {
-      protected $prefixes = [];
-      public function register() {
-        spl_autoload_register([$this, 'loadClass']);
-      }
       /**
-       * Unregister loader with SPL autoloader stack.
-       *
-       * @return void
+       * @var array
+       * @internal
        */
-      public function unregister() {
-        spl_autoload_unregister([$this, 'loadClass']);
-      }
+      public $prefixes = [];
       /**
        * Adds a base directory for a namespace prefix.
        *
@@ -466,22 +535,23 @@ namespace PathLoad {
         return FALSE;
       }
     }
-
-
   }
 }
 
 namespace {
-  if (!isset($GLOBALS['_PathLoad'])) {
-    $GLOBALS['_PathLoad'] = new \PathLoad\PathLoad(
-      getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : []
-    );
-    $GLOBALS['_PathLoad']->register();
+  if (!isset($GLOBALS['_PathLoad'][0])) {
+    $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
   }
-
-  function pathload(): \PathLoad\PathLoadInterface {
-    return $GLOBALS['_PathLoad'];
+  if (!function_exists('pathload')) {
+    /**
+     * Get a reference the PathLoad manager.
+     *
+     * @param int|string $version
+     * @return \PathLoadInterface
+     */
+    function pathload($version = 'top') {
+      return $GLOBALS['_PathLoad'][$version];
+    }
   }
-
   return pathload();
 }

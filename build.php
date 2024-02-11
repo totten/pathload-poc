@@ -10,22 +10,27 @@ function main() {
     mkdir('dist');
   }
   $dir = __DIR__;
+  $dist = "$dir/dist";
+  $version = PATHLOAD_VERSION;
 
   $full = evalTemplate(FALSE);
-  file_put_contents("$dir/dist/pathload.php", $full);
+  file_put_contents("$dist/pathload-latest.php", $full);
+  copy("$dist/pathload-latest.php", "$dist/pathload-$version.php");
 
   $min = evalTemplate(TRUE);
-  file_put_contents("$dir/dist/pathload.min.php", $min);
+  file_put_contents("$dist/pathload-latest.min.php", $min);
+  copy("$dist/pathload-latest.min.php", "$dist/pathload-$version.min.php");
 }
 
-function evalTemplate(bool $stripComments): string {
-  $cleanup = ($stripComments ? '\PathLoad\Build\stripComments' : '\PathLoad\Build\identity');
+function evalTemplate(bool $minify): string {
+  $cleanup = ($minify ? '\PathLoad\Build\stripComments' : '\PathLoad\Build\identity');
 
   $template = read('template.php');
   $phpSources = [
     'PathLoadInterface' => read('PathLoadInterface.php'),
     'funcs' => $cleanup(read('funcs.php')),
     'PathLoad' => $cleanup(read('PathLoad.php')),
+    'PathLoadVersions' => $cleanup(read('PathLoadVersions.php')),
     'Psr4Autoloader' => $cleanup(read('Psr4Autoloader.php')),
   ];
 

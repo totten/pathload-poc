@@ -1,5 +1,5 @@
 <?php
-namespace PathLoad;
+namespace PathLoad\Vn;
 
 class PathLoad implements \PathLoadInterface {
 
@@ -73,10 +73,10 @@ class PathLoad implements \PathLoadInterface {
    *   Identify the version being instantiated.
    * @param \PathLoadInterface|null $old
    *   If this instance is a replacement for an older instance, then it will be passed in.
-   * @return array
+   * @return \ArrayAccess
    *   Versioned work-a-like array.
    */
-  public static function create(int $version, ?\PathLoadInterface $old = NULL): array {
+  public static function create(int $version, ?\PathLoadInterface $old = NULL) {
     if ($old !== NULL) {
       $old->unregister();
     }
@@ -95,7 +95,7 @@ class PathLoad implements \PathLoadInterface {
       $new->psr4Classloader = new Psr4Autoloader();
     }
     else {
-      // TIP: You might use $old->version to decide what to take
+      // TIP: You might use $old->version to decide what to use.
       $new->availableSearchRules = $old->availableSearchRules;
       $new->resolvedSearchRules = $old->resolvedSearchRules;
       $new->availablePackages = $old->availablePackages;
@@ -105,10 +105,7 @@ class PathLoad implements \PathLoadInterface {
     }
 
     $new->register();
-
-    $result = array_fill(0, $new->version, $new);
-    $result['top'] = $new;
-    return $result;
+    return new PathLoadVersions($new);
   }
 
   /**

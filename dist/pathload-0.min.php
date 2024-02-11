@@ -1,10 +1,7 @@
 <?php
 
-namespace PathLoad {
-  if (!class_exists('PathLoad')) {
-    function doRequire(string $file) {
-      return require $file;
-    }
+namespace {
+  if (!interface_exists('PathLoadInterface')) {
     /**
      * @method PathLoadInterface addSearchDir(string $baseDir)
      * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
@@ -17,30 +14,77 @@ namespace PathLoad {
       // This will give us wiggle-room while also giving type-hints in average case.
 
     }
-    class PathLoad implements PathLoadInterface {
-      public $version = '0.1';
+  }
+}
+
+namespace PathLoad\V0 {
+  if (!class_exists('PathLoad')) {
+    function doRequire(string $file) {
+      return require $file;
+    }
+    class PathLoadVersions implements \ArrayAccess {
+      public $top;
+      public function __construct($top) {
+        $this->top = $top;
+      }
+      public function offsetExists($version) {
+        return ($version === 'top' || $version <= $this->top->version);
+      }
+      public function offsetGet($version) {
+        if ($version === 'top' || $version <= $this->top->version) {
+          return $this->top;
+        }
+        return NULL;
+      }
+      public function offsetSet($offset, $value) {
+        error_log("Cannot overwrite PathLoad[$offset]");
+      }
+      public function offsetUnset($offset) {
+        error_log("Cannot remove PathLoad[$offset]");
+      }
+    }
+    class PathLoad implements \PathLoadInterface {
+      public $version;
       public $availableSearchRules = [];
       public $resolvedSearchRules = [];
       public $availablePackages = [];
       public $resolvedPackages = [];
       public $availableNamespaces;
       public $psr4Classloader;
-      public function __construct(array $baseDirs = []) {
-        $this->psr4Classloader = new Psr4Autoloader();
-        foreach ($baseDirs as $baseDir) {
-          $this->addSearchDir($baseDir);
+      public static function create(int $version, ?\PathLoadInterface $old = NULL) {
+        if ($old !== NULL) {
+          $old->unregister();
         }
+        $new = new static();
+        $new->version = $version;
+        if ($old === NULL) {
+          $baseDirs = getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : [];
+          foreach ($baseDirs as $baseDir) {
+            $new->addSearchDir($baseDir);
+          }
+          $new->psr4Classloader = new Psr4Autoloader();
+        }
+        else {
+                $new->availableSearchRules = $old->availableSearchRules;
+          $new->resolvedSearchRules = $old->resolvedSearchRules;
+          $new->availablePackages = $old->availablePackages;
+          $new->resolvedPackages = $old->resolvedPackages;
+          $new->availableNamespaces = $old->availableNamespaces;
+          $new->psr4Classloader = $old->psr4Classloader;
+        }
+        $new->register();
+        return new PathLoadVersions($new);
       }
-      public function addSearchRule(string $package, string $glob): PathLoadInterface {
+      public function addSearchRule(string $package, string $glob): \PathLoadInterface {
         if (!isset($this->resolvedSearchRules[$glob])) {
           $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
         }
         return $this;
       }
-      public function addSearchDir(string $baseDir): PathLoadInterface {
+      public function addSearchDir(string $baseDir): \PathLoadInterface {
         return $this->addSearchRule('*', "$baseDir/*@*");
       }
-      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): PathLoadInterface {
+      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
         $this->addPackageNamespace($package, $namespaces);
         if ($baseDir) {
           $glob = strpos($package, '@') === FALSE
@@ -50,14 +94,14 @@ namespace PathLoad {
         }
         return $this;
       }
-      public function addPackageNamespace(string $package, $namespaces): PathLoadInterface {
+      public function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
         $namespaces = (array) $namespaces;
         foreach ($namespaces as $namespace) {
           $this->availableNamespaces[$namespace][$package] = $package;
         }
         return $this;
       }
-      public function addAll(array $all, string $baseDir = ''): PathLoadInterface {
+      public function addAll(array $all, string $baseDir = ''): \PathLoadInterface {
         foreach ($all['searchDirs'] ?? [] as $tuple) {
           $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
         }
@@ -81,8 +125,12 @@ namespace PathLoad {
         }
         return $prefix . $path;
       }
-      public function register(): PathLoadInterface {
+      public function register(): \PathLoadInterface {
         spl_autoload_register([$this, 'loadClass']);
+        return $this;
+      }
+      public function unregister(): \PathLoadInterface {
+        spl_autoload_unregister([$this, 'loadClass']);
         return $this;
       }
       public function loadClass(string $class) {
@@ -213,13 +261,7 @@ namespace PathLoad {
       }
     }
     class Psr4Autoloader {
-      protected $prefixes = [];
-      public function register() {
-        spl_autoload_register([$this, 'loadClass']);
-      }
-      public function unregister() {
-        spl_autoload_unregister([$this, 'loadClass']);
-      }
+      public $prefixes = [];
       public function addNamespace($prefix, $base_dir, $prepend = FALSE) {
         $prefix = trim($prefix, '\\') . '\\';
         $base_dir = rtrim($base_dir, DIRECTORY_SEPARATOR) . '/';
@@ -270,14 +312,19 @@ namespace PathLoad {
 }
 
 namespace {
-  if (!isset($GLOBALS['_PathLoad'])) {
-    $GLOBALS['_PathLoad'] = new \PathLoad\PathLoad(
-      getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : []
-    );
-    $GLOBALS['_PathLoad']->register();
+  if (!isset($GLOBALS['_PathLoad'][0])) {
+    $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
   }
-  function pathload(): \PathLoad\PathLoadInterface {
-    return $GLOBALS['_PathLoad'];
+  if (!function_exists('pathload')) {
+    /**
+     * Get a reference the PathLoad manager.
+     *
+     * @param int|string $version
+     * @return \PathLoadInterface
+     */
+    function pathload($version = 'top') {
+      return $GLOBALS['_PathLoad'][$version];
+    }
   }
   return pathload();
 }
