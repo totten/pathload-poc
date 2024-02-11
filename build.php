@@ -1,7 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-namespace PathLoad;
+namespace PathLoad\Build;
+
+define('PATHLOAD_VERSION', 0);
 
 function main() {
   if (!is_dir('dist')) {
@@ -9,40 +11,41 @@ function main() {
   }
   $dir = __DIR__;
 
-  $template = read('template.php');
-  $full = evalTemplate($template, [
-    "\n",
-    read('funcs.php'),
-    read('PathLoadInterface.php'),
-    read('PathLoad.php'),
-    read('Psr4Autoloader.php'),
-  ]);
+  $full = evalTemplate(FALSE);
   file_put_contents("$dir/dist/pathload.php", $full);
 
-  $min = trimWhitespace(evalTemplate($template, [
-    "\n",
-    stripComments(read('funcs.php')),
-    read('PathLoadInterface.php'),
-    stripComments(read('PathLoad.php')),
-    stripComments(read('Psr4Autoloader.php')),
-  ]));
+  $min = evalTemplate(TRUE);
   file_put_contents("$dir/dist/pathload.min.php", $min);
+}
+
+function evalTemplate(bool $stripComments): string {
+  $cleanup = ($stripComments ? '\PathLoad\Build\stripComments' : '\PathLoad\Build\identity');
+
+  $template = read('template.php');
+  $phpSources = [
+    'PathLoadInterface' => read('PathLoadInterface.php'),
+    'funcs' => $cleanup(read('funcs.php')),
+    'PathLoad' => $cleanup(read('PathLoad.php')),
+    'Psr4Autoloader' => $cleanup(read('Psr4Autoloader.php')),
+  ];
+
+  $includeCode = function ($m) use ($phpSources) {
+    return "\n" . normalize($phpSources[$m[2]], $m[1]) . "\n";
+  };
+  $result = preg_replace_callback(';\n(\s*)//INCLUDE:(\w+)//;', $includeCode, $template);
+  $result = strtr($result, [
+    'PATHLOAD_NS' => 'PathLoad\V' . PATHLOAD_VERSION,
+    'PATHLOAD_VERSION' => PATHLOAD_VERSION,
+  ]);
+  return trimWhitespace($result);
+}
+
+function identity($x) {
+  return $x;
 }
 
 function read($file): string {
   return file_get_contents(__DIR__ . '/src/' . $file);
-}
-
-function evalTemplate(string $template, array $phpSources): string {
-  $makeClasses = function ($m) use ($phpSources) {
-    $classes = '';
-    foreach ($phpSources as $phpSource) {
-      $classes .= normalize($phpSource, $m[1]) . "\n";
-    }
-    $classes = trimWhitespace($classes);
-    return $classes;
-  };
-  return preg_replace_callback(';\n(\s*)//CLASSES//;', $makeClasses, $template);
 }
 
 function stripComments(string $phpSource): string {
@@ -111,6 +114,7 @@ function normalize(string $phpSource, string $prefix): string {
   $phpSource = str_replace("<" . "?php", "", $phpSource);
   $phpSource = preg_replace("~namespace PathLoad[\w\\\]*;~", "", $phpSource);
   $phpSource = trim($phpSource, "\n") . "\n";
+  $phpSource = trimWhitespace($phpSource);
   return $phpSource;
 }
 

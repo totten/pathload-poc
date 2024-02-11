@@ -1,7 +1,5 @@
 <?php
 
-namespace PathLoad;
-
 /**
  * @method PathLoadInterface addSearchDir(string $baseDir)
  * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)

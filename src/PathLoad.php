@@ -1,9 +1,12 @@
 <?php
 namespace PathLoad;
 
-class PathLoad implements PathLoadInterface {
+class PathLoad implements \PathLoadInterface {
 
-  public $version = '0.1';
+  /**
+   * @var null|int
+   */
+  public $version;
 
   /**
    * List of globs that we will scan (if we need to load a package).
@@ -13,6 +16,7 @@ class PathLoad implements PathLoadInterface {
    *
    * @var array
    *   Array([package => string, glob => string])
+   * @internal
    */
   public $availableSearchRules = [];
 
@@ -21,6 +25,7 @@ class PathLoad implements PathLoadInterface {
    *
    * @var array
    *   Array(string $glob => [package => string, glob => string])
+   * @internal
    */
   public $resolvedSearchRules = [];
 
@@ -31,6 +36,7 @@ class PathLoad implements PathLoadInterface {
    *
    * @var array
    *   Array(string $majorName => [name => string, version => string, file => string type => string])
+   * @internal
    */
   public $availablePackages = [];
 
@@ -39,6 +45,7 @@ class PathLoad implements PathLoadInterface {
    *
    * @var array
    *   Array(string $majorName => [name => string, version => string, file => string type => string])
+   * @internal
    */
   public $resolvedPackages = [];
 
@@ -51,19 +58,57 @@ class PathLoad implements PathLoadInterface {
    * @var array
    *   Array(string $prefix => [string $package => string $package])
    *   Ex: ['Super\Cloud\IO\' => ['cloud-io@1' => 'cloud-io@1']
+   * @internal
    */
   public $availableNamespaces;
 
   /**
    * @var Psr4Autoloader
+   * @internal
    */
   public $psr4Classloader;
 
-  public function __construct(array $baseDirs = []) {
-    $this->psr4Classloader = new Psr4Autoloader();
-    foreach ($baseDirs as $baseDir) {
-      $this->addSearchDir($baseDir);
+  /**
+   * @param int $version
+   *   Identify the version being instantiated.
+   * @param \PathLoadInterface|null $old
+   *   If this instance is a replacement for an older instance, then it will be passed in.
+   * @return array
+   *   Versioned work-a-like array.
+   */
+  public static function create(int $version, ?\PathLoadInterface $old = NULL): array {
+    if ($old !== NULL) {
+      $old->unregister();
     }
+
+    $new = new static();
+    $new->version = $version;
+
+    // The exact protocol for assimilating $old instances may need change.
+    // This seems like a fair guess as long as old properties are forward-compatible.
+
+    if ($old === NULL) {
+      $baseDirs = getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : [];
+      foreach ($baseDirs as $baseDir) {
+        $new->addSearchDir($baseDir);
+      }
+      $new->psr4Classloader = new Psr4Autoloader();
+    }
+    else {
+      // TIP: You might use $old->version to decide what to take
+      $new->availableSearchRules = $old->availableSearchRules;
+      $new->resolvedSearchRules = $old->resolvedSearchRules;
+      $new->availablePackages = $old->availablePackages;
+      $new->resolvedPackages = $old->resolvedPackages;
+      $new->availableNamespaces = $old->availableNamespaces;
+      $new->psr4Classloader = $old->psr4Classloader;
+    }
+
+    $new->register();
+
+    $result = array_fill(0, $new->version, $new);
+    $result['top'] = $new;
+    return $result;
   }
 
   /**
@@ -76,7 +121,7 @@ class PathLoad implements PathLoadInterface {
    *   Ex: '/var/www/lib/*@*' or '/var/www/lib/cloud-io@1*.phar'
    * @return $this
    */
-  public function addSearchRule(string $package, string $glob): PathLoadInterface {
+  public function addSearchRule(string $package, string $glob): \PathLoadInterface {
     if (!isset($this->resolvedSearchRules[$glob])) {
       $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
     }
@@ -89,7 +134,7 @@ class PathLoad implements PathLoadInterface {
    * @param string $baseDir
    *   The path to a base directory (e.g. `/var/www/myapp/lib`) which contains many packages (e.g. `foo@1.2.3.phar` or `bar@4.5.6/autoload.php`).
    */
-  public function addSearchDir(string $baseDir): PathLoadInterface {
+  public function addSearchDir(string $baseDir): \PathLoadInterface {
     return $this->addSearchRule('*', "$baseDir/*@*");
   }
 
@@ -106,7 +151,7 @@ class PathLoad implements PathLoadInterface {
    * @param string|NULL $baseDir
    *   Ex: '/var/www/myapp/lib'
    */
-  public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): PathLoadInterface {
+  public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
     $this->addPackageNamespace($package, $namespaces);
 
     if ($baseDir) {
@@ -129,7 +174,7 @@ class PathLoad implements PathLoadInterface {
    * @param string|string[] $namespaces
    *   Ex: 'Super\Cloud\IO\'
    */
-  public function addPackageNamespace(string $package, $namespaces): PathLoadInterface {
+  public function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
     $namespaces = (array) $namespaces;
     foreach ($namespaces as $namespace) {
       $this->availableNamespaces[$namespace][$package] = $package;
@@ -144,9 +189,9 @@ class PathLoad implements PathLoadInterface {
    *   Ex: ['searchDirs' => [ ['/var/www/lib'], ['/usr/local/share/php'] ]]
    *   Ex: ['packages' => [ ['cloud-io@1', '] ]]
    * @param string $baseDir
-   * @return \PathLoad\PathLoadInterface
+   * @return \PathLoadInterface
    */
-  public function addAll(array $all, string $baseDir = ''): PathLoadInterface {
+  public function addAll(array $all, string $baseDir = ''): \PathLoadInterface {
     foreach ($all['searchDirs'] ?? [] as $tuple) {
       $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
     }
@@ -182,8 +227,16 @@ class PathLoad implements PathLoadInterface {
   /**
    * Register the autoloader.
    */
-  public function register(): PathLoadInterface {
+  public function register(): \PathLoadInterface {
     spl_autoload_register([$this, 'loadClass']);
+    return $this;
+  }
+
+  /**
+   * Un-register the autoloader.
+   */
+  public function unregister(): \PathLoadInterface {
+    spl_autoload_unregister([$this, 'loadClass']);
     return $this;
   }
 

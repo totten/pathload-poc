@@ -1,21 +1,30 @@
 <?php
 
-namespace PathLoad {
+namespace {
+  if (!interface_exists('PathLoadInterface')) {
+    //INCLUDE:PathLoadInterface//
+  }
+}
+
+namespace PATHLOAD_NS {
   if (!class_exists('PathLoad')) {
-    //CLASSES//
+    //INCLUDE:funcs//
+    //INCLUDE:PathLoad//
+    //INCLUDE:Psr4Autoloader//
   }
 }
 
 namespace {
-  if (!isset($GLOBALS['_PathLoad'])) {
-    $GLOBALS['_PathLoad'] = new \PathLoad\PathLoad(
-      getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : []
-    );
-    $GLOBALS['_PathLoad']->register();
+  if (!isset($GLOBALS['_PathLoad']['top']) || $GLOBALS['_PathLoad']['top']->version < PATHLOAD_VERSION) {
+    $GLOBALS['_PathLoad'] = \PATHLOAD_NS\PathLoad::create(PATHLOAD_VERSION, $GLOBALS['_PathLoad']['top'] ?? NULL);
   }
 
-  function pathload(): \PathLoad\PathLoadInterface {
-    return $GLOBALS['_PathLoad'];
+  if (!function_exists('pathload')) {
+
+    function pathload(): \PathLoadInterface {
+      return $GLOBALS['_PathLoad']['top'];
+    }
+
   }
 
   return pathload();
