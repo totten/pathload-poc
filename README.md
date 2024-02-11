@@ -17,33 +17,63 @@ The challenge for these PHP application-modules is that they must load one versi
 
 PathLoad is a protocol where each addon may independently distribute its preferred libraries -- but old libraries will yield to new replacements. It works even if the host application (*WP, D7*) lacks support, and it allows multiple developers to ship the same library. It also means that site-builders and security-tools may deploy updated libraries without modifying the application-modules -- you simply copy an updated library onto the search-path.
 
-## Usage
+## Usage (Module Developer)
 
-Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io`. Here's how to use it:
+Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io` (aka `cloud-file-io@1.2.3.phar`). Here's how to use it:
 
-1. Download `cloud-file-io` as a PHAR file (eg `cloud-file-io@1.2.3.phar`)
-2. Copy `cloud-file-io@1.2.3.phar` and `pathload.php` into your codebase (`$MY_MODULE/dist/`)
-3. In your application-module, add 2 lines of code to activate the PHAR:
+1. Download `cloud-file-io@1.2.3.phar` and `pathload.php` into your codebase (`$MY_MODULE/dist/`).
+
+    ```bash
+   mkdir $MY_MODULE/dist/
+   cd $MY_MODULE/dist/
+   wget https://example.com/download/pathload-latest.php.txt -O pathload.php
+   wget https://example.com/download/cloud-file-io@1.2.3.phar -O cloud-file-io@1.2.3.phar
+    ```
+
+2. In your application-module:
 
     ```php
-    // Add your `dist/` folder to PathLoad:
-    ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php')->addPackageDir(__DIR__ . '/dist');
+    // If necessary, load your copy of `pathload.php`.
+    ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php');
+
+    // Register your `dist/` folder:
+    pathload()->addPackageDir(__DIR__ . '/dist');
 
     // Declare that you wish to use `cloud-file-io` v1.x
     pathload()->addPackage('cloud-file-io@1', 'CloudFileIO\\');
     ```
 
 3. Now, anywhere in your plugin, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
-4. At runtime, when using `\CloudFileIO\Amazon\S3`, it will find the best-available version of `cloud-file-io.phar`.
+4. At runtime, when you autoload `\CloudFileIO\Amazon\S3`, it observes the namespace and loads `cloud-file-io@*.phar`. This will use the best-available version:
     * If your plugin is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
     * If another plugin includes a newer version (`cloud-file-io@1.5.0.phar`), then that will be loaded instead.
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
     * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
+## Usage (Administrator)
+
+If you are managing a system with many modules, then you may wish deploy your own updates (without directly editing
+the upstream modules). Here's how:
+
+1. Create a new folder (eg `/usr/local/share/php-pathload`) and add your new `cloud-file-io@1.8.0.phar`:
+
+  ```bash
+   mkdir /usr/local/share/php-pathload
+   cd /usr/local/share/php-pathload
+   wget https://example.com/download/cloud-file-io@1.8.0.phar -O cloud-file-io@1.8.0.phar
+  ```
+
+2. Add a new environment variable (`PHP_PATHLOAD`) to the environment of your PHP application:
+
+  ```bash
+  PHP_PATHLOAD=/usr/local/share/php-pathload:/usr/share/php-pathload
+  ```
+
 ## Important notes
 
 * The pathload object (aka `pathload.php` aka `$_PathLoad` aka `pathload()`) is only initialized one time.
 * The pathload object allows you to register metadata. This should be done very early (*before classes are actually needed*).
+* Once a class is actually used, it *commits to the version*.
 * It integrates into the classloader - it will not load anything until there is a live requirement for a specific class.
     * Ex: ___If___ someone instantiates a class from the namespace `CloudFileIO\`, ___then___ it will use `cloud-file-io@1.2.3.phar`. ___Otherwise___, the PHAR file is ignored.
 * There is an empirical question about the performance of this mechanism.
