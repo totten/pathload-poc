@@ -5,40 +5,85 @@ namespace PathLoad {
     function doRequire(string $file) {
       return require $file;
     }
-    class PathLoad {
-      protected $searchRules = [];
-      protected $scanned = [];
-      protected $availablePackages = [];
-      protected $resolvedPackages = [];
-      protected $namespaces;
-      protected $psr4Classloader;
+    /**
+     * @method PathLoadInterface addSearchDir(string $baseDir)
+     * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
+     * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
+     * @method PathLoadInterface addAll(array $all, string $baseDir = '')
+     */
+    interface PathLoadInterface {
+      // Use soft type-hints. If the contract changes, we won't be able to
+      // un-publish or block old implementations, and they need to coexist.
+      // This will give us wiggle-room while also giving type-hints in average case.
+
+    }
+    class PathLoad implements PathLoadInterface {
+      public $version = '0.1';
+      public $availableSearchRules = [];
+      public $resolvedSearchRules = [];
+      public $availablePackages = [];
+      public $resolvedPackages = [];
+      public $availableNamespaces;
+      public $psr4Classloader;
       public function __construct(array $baseDirs = []) {
         $this->psr4Classloader = new Psr4Autoloader();
         foreach ($baseDirs as $baseDir) {
-          $this->append($baseDir);
+          $this->addSearchDir($baseDir);
         }
       }
-      public function append(string $baseDir): PathLoad {
-        $this->searchRules[] = ['package' => '*', 'glob' => "$baseDir/*@*"];
+      public function addSearchRule(string $package, string $glob): PathLoadInterface {
+        if (!isset($this->resolvedSearchRules[$glob])) {
+          $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
+        }
         return $this;
       }
-      public function addPackage($namespaces, string $package, ?string $baseDir = NULL): PathLoad {
-        $namespaces = (array) $namespaces;
-        foreach ($namespaces as $namespace) {
-          $this->namespaces[$namespace][] = $package;
-        }
+      public function addSearchDir(string $baseDir): PathLoadInterface {
+        return $this->addSearchRule('*', "$baseDir/*@*");
+      }
+      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): PathLoadInterface {
+        $this->addPackageNamespace($package, $namespaces);
         if ($baseDir) {
           $glob = strpos($package, '@') === FALSE
             ? "{$baseDir}/{$package}@*"
             : "{$baseDir}/{$package}*";
-          if (!isset($this->scanned[$glob])) {
-            $this->searchRules[] = ['package' => $package, 'glob' => $glob];
-          }
+          $this->addSearchRule($package, $glob);
         }
         return $this;
       }
-      public function register() {
+      public function addPackageNamespace(string $package, $namespaces): PathLoadInterface {
+        $namespaces = (array) $namespaces;
+        foreach ($namespaces as $namespace) {
+          $this->availableNamespaces[$namespace][$package] = $package;
+        }
+        return $this;
+      }
+      public function addAll(array $all, string $baseDir = ''): PathLoadInterface {
+        foreach ($all['searchDirs'] ?? [] as $tuple) {
+          $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
+        }
+        foreach ($all['packages'] ?? [] as $tuple) {
+          $this->addPackage($tuple[0], $tuple[1], isset($tuple[2]) ? $this->withBaseDir($tuple[2], $baseDir) : NULL);
+        }
+        foreach ($all['packageNamespaces'] ?? [] as $tuple) {
+          $this->addPackageNamespace($tuple[0], $tuple[1]);
+        }
+        return $this;
+      }
+      protected function withBaseDir(?string $path, ?string $prefix): string {
+        if ($path === NULL || $prefix === NULL) {
+          return $path;
+        }
+        if (DIRECTORY_SEPARATOR === '/' && $path[0] === DIRECTORY_SEPARATOR) {
+          return $path;
+        }
+        if (DIRECTORY_SEPARATOR === '\\' && isset($path[1]) && $path[1] === ':') {
+          return $path;
+        }
+        return $prefix . $path;
+      }
+      public function register(): PathLoadInterface {
         spl_autoload_register([$this, 'loadClass']);
+        return $this;
       }
       public function loadClass(string $class) {
         if (strpos($class, '\\') !== FALSE) {
@@ -56,17 +101,17 @@ namespace PathLoad {
           $namespace = '';
           foreach ($classParts as $nsPart) {
             $namespace .= $nsPart . $delim;
-            if (isset($this->namespaces[$namespace])) {
+            if (isset($this->availableNamespaces[$namespace])) {
               $foundPackages = TRUE;
-              $packages = $this->namespaces[$namespace];
-              unset($this->namespaces[$namespace]);
+              $packages = $this->availableNamespaces[$namespace];
+              unset($this->availableNamespaces[$namespace]);
               foreach ($packages as $package) {
                 $this->loadPackage($package);
               }
             }
           }
         } while ($foundPackages);
-      }
+              }
       public function loadPackage(string $package): PathLoad {
         $packageInfo = $this->resolve($package);
         switch ($packageInfo['type'] ?? NULL) {
@@ -95,7 +140,7 @@ namespace PathLoad {
           $composerJsonData = file_get_contents($composerJsonFile);
           $compserJson = \json_decode($composerJsonData, TRUE);
           if (!empty($compserJson['autoload']['include'])) {
-                                    foreach ($compserJson['autoload']['include'] as $file) {
+                            foreach ($compserJson['autoload']['include'] as $file) {
               doRequire($dir . '/' . $file);
             }
           }
@@ -106,7 +151,7 @@ namespace PathLoad {
           }
           foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
             error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
-                      }
+                  }
         }
       }
       protected function resolve(string $package): ?array {
@@ -114,15 +159,17 @@ namespace PathLoad {
         if (isset($this->resolvedPackages[$majorName])) {
           return $this->resolvedPackages[$majorName];
         }
-        foreach (array_keys($this->searchRules) as $key) {
-          $searchRule = $this->searchRules[$key];
+        foreach (array_keys($this->availableSearchRules) as $key) {
+          $searchRule = $this->availableSearchRules[$key];
           if ($searchRule['package'] === '*' || $searchRule['package'] === $majorName) {
-            unset($this->searchRules[$key]);
+            $this->resolvedSearchRules[$searchRule['glob']] = $searchRule;
+            unset($this->availableSearchRules[$key]);
             $this->scan($searchRule['glob']);
           }
         }
         if (isset($this->availablePackages[$majorName])) {
           $this->resolvedPackages[$majorName] = $this->availablePackages[$majorName];
+          unset($this->availablePackages[$majorName]);
           return $this->resolvedPackages[$majorName];
         }
         error_log("Failed to resolve \"$package\"");
@@ -143,10 +190,15 @@ namespace PathLoad {
             $type = 'dir';
           }
           else {
-                        continue;
+                    continue;
           }
           if (!isset($this->availablePackages[$majorName]) || version_compare($this->availablePackages[$majorName]['version'], $version, '<')) {
-            $this->availablePackages[$majorName] = ['name' => $name, 'version' => $version, 'file' => $file, 'type' => $type];
+            $this->availablePackages[$majorName] = [
+              'name' => $name,
+              'version' => $version,
+              'file' => $file,
+              'type' => $type,
+            ];
           }
         }
       }
@@ -224,7 +276,7 @@ namespace {
     );
     $GLOBALS['_PathLoad']->register();
   }
-  function pathload(): \PathLoad\PathLoad {
+  function pathload(): \PathLoad\PathLoadInterface {
     return $GLOBALS['_PathLoad'];
   }
   return pathload();
