@@ -6,7 +6,7 @@ namespace {
      * @method PathLoadInterface addSearchDir(string $baseDir)
      * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
      * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
-     * @method PathLoadInterface addAll(array $all, string $baseDir = '')
+     * @method PathLoadInterface import(array $all, string $baseDir = '')
      */
     interface PathLoadInterface {
       // Use soft type-hints. If the contract changes, we won't be able to
@@ -101,7 +101,7 @@ namespace PathLoad\V0 {
         }
         return $this;
       }
-      public function addAll(array $all, string $baseDir = ''): \PathLoadInterface {
+      public function import(array $all, string $baseDir = ''): \PathLoadInterface {
         foreach ($all['searchDirs'] ?? [] as $tuple) {
           $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
         }
