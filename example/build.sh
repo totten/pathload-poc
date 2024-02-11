@@ -1,6 +1,8 @@
 #!/bin/bash
 
+EXAMPLES=$PWD
 DIST=$PWD/dist
+MAIN=$(dirname "$EXAMPLES")
 
 function PHAR() {
  php -d phar.readonly=0 `which phar` "$@"
@@ -12,7 +14,8 @@ if [ ! -d "$DIST" ]; then
   mkdir "$DIST"
 fi
 
-cp ../src/pathload.php dist/pathload.php
+(cd "$MAIN" && php build.php)
+cp "$MAIN/dist/pathload.php" "$EXAMPLES/dist/pathload.php"
 
 for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'extralib@1.0.0' ; do 
   pushd "lib/$pkg"

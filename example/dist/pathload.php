@@ -2,56 +2,54 @@
 
 namespace PathLoad {
   if (!class_exists('PathLoad')) {
-    class PathLoad {
 
+    class PathLoad {
       /**
        * List of globs that we will scan (if we need to load a package).
        *
-       * @var array([package => string, glob => string])
+       * @var array
+       *   Array([package => string, glob => string])
        */
       protected $searchRules = [];
-
       /**
        * List of globs that have been scanned already.
        *
-       * @var array(string $glob => bool)
+       * @var array
+       *   Array(string $glob => bool)
        */
       protected $scanned = [];
-
       /**
        * List of best-known versions for each package.
        *
-       * @var array(string $majorName => array(string $version, string $baseDir)))
+       * @var array
+       *   Array(string $majorName => array(string $version, string $baseDir)))
        */
       protected $availablePackages = [];
-
       /**
        * List of package names that have already been resolved.
        *
-       * @var array(string $majorName => bool)
+       * @var array
+       *   Array(string $majorName => bool)
        */
       protected $resolvedPackages = [];
-
       /**
        * List of hints for class-loading. If someone tries to use a matching class, then
        * load the corresponding package.
        *
-       * @var array(string $prefix => array $packages)
+       * @var array
+       *   Array(string $prefix => array $packages)
        */
       protected $namespaces;
-
       /**
        * @var Psr4Autoloader
        */
       protected $psr4Classloader;
-
       public function __construct(array $baseDirs = []) {
         $this->psr4Classloader = new Psr4Autoloader();
         foreach ($baseDirs as $baseDir) {
           $this->append($baseDir);
         }
       }
-
       /**
        * Append a directory (with many packages) to the search-path.
        *
@@ -62,12 +60,11 @@ namespace PathLoad {
         $this->searchRules[] = ['package' => '*', 'glob' => "$baseDir/*@*"];
         return $this;
       }
-
       /**
        * Add a specific package. This is similar to `append()` but requires hints -- which allow better behavior:
        *
-       * - By giving the `$package`, we defer the need to `glob()` folders (until/unless someone actually needs $package).
-       * - By giving the `$namespaces`, we can integrate the autoloader - so you can use classes without any extra `requireOnce()` calls.
+       * - By giving the `$namespaces`+`$package`, we can integrate with the autoloader - we will auto-load a package when the relevant namespace(s) are used.
+       * - By giving the `$package`+`$baseDir`, we defer the need to `glob()` folders (until/unless someone actually needs $package).
        *
        * @param string|array $namespaces
        *   Ex: ['DB_', 'GuzzleHttp\\']
@@ -81,7 +78,6 @@ namespace PathLoad {
         foreach ($namespaces as $namespace) {
           $this->namespaces[$namespace][] = $package;
         }
-
         if ($baseDir) {
           $glob = strpos($package, '@') === FALSE
             ? "{$baseDir}/{$package}@*"
@@ -90,14 +86,11 @@ namespace PathLoad {
             $this->searchRules[] = ['package' => $package, 'glob' => $glob];
           }
         }
-
         return $this;
       }
-
       public function register() {
         spl_autoload_register([$this, 'loadClass']);
       }
-
       public function loadClass(string $class) {
         if (strpos($class, '\\') !== FALSE) {
           $this->loadPackagesByNamespace('\\', explode('\\', $class));
@@ -105,10 +98,8 @@ namespace PathLoad {
         elseif (strpos($class, '_') !== FALSE) {
           $this->loadPackagesByNamespace('_', explode('_', $class));
         }
-
         return $this->psr4Classloader->loadClass($class);
       }
-
       /**
        * @param string $delim
        *   Ex: '\\' or '_'
@@ -133,43 +124,37 @@ namespace PathLoad {
           }
         } while ($foundPackages);
       }
-
       public function loadPackage(string $package): PathLoad {
         $packageInfo = $this->resolve($package);
         switch ($packageInfo['type'] ?? NULL) {
           case 'php':
             doRequire($packageInfo['file']);
             return $this;
-
           case 'phar':
             doRequire($packageInfo['file']);
             $this->useMetadataFiles('phar://' . $packageInfo['file']);
             return $this;
-
           case 'dir':
             $this->useMetadataFiles($packageInfo['file']);
             return $this;
-
           default:
             error_log("Failed to load package \"$package\".");
             return $this;
         }
       }
-
       protected function useMetadataFiles(string $dir): void {
         $bootFile = "$dir/.config/pathload.php";
         if ($bootFile) {
           require $bootFile;
         }
-
         $composerJsonFile = "$dir/composer.json";
         if (file_exists($composerJsonFile)) {
           $composerJsonData = file_get_contents($composerJsonFile);
           $compserJson = \json_decode($composerJsonData, TRUE);
           if (!empty($compserJson['autoload']['include'])) {
             // Would it be better to just warn? We can't really do the same semantics, but this
-            // arguably might help in some cases.
-            foreach ($compserJson['autoload']['include'] as $file) {
+        // arguably might help in some cases.
+        foreach ($compserJson['autoload']['include'] as $file) {
               doRequire($dir . '/' . $file);
             }
           }
@@ -181,10 +166,9 @@ namespace PathLoad {
           foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
             error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
             // $this->psr4Classloader->addNamespace($prefix, $relPath);
-          }
+      }
         }
       }
-
       protected function resolve(string $package): ?array {
         // if (strpos($package, '@') === FALSE) {}
 
@@ -192,7 +176,6 @@ namespace PathLoad {
         if (isset($this->resolvedPackages[$majorName])) {
           return $this->resolvedPackages[$majorName];
         }
-
         foreach (array_keys($this->searchRules) as $key) {
           $searchRule = $this->searchRules[$key];
           if ($searchRule['package'] === '*' || $searchRule['package'] === $majorName) {
@@ -200,16 +183,13 @@ namespace PathLoad {
             $this->scan($searchRule['glob']);
           }
         }
-
         if (isset($this->availablePackages[$majorName])) {
           $this->resolvedPackages[$majorName] = $this->availablePackages[$majorName];
           return $this->resolvedPackages[$majorName];
         }
-
         error_log("Failed to resolve \"$package\"");
         return NULL;
       }
-
       protected function scan(string $glob): void {
         foreach ((array) glob($glob) as $file) {
           if (substr($file, -4) === '.php') {
@@ -226,15 +206,13 @@ namespace PathLoad {
           }
           else {
             // Not for us.
-            continue;
+        continue;
           }
-
           if (!isset($this->availablePackages[$majorName]) || version_compare($this->availablePackages[$majorName]['version'], $version, '<')) {
             $this->availablePackages[$majorName] = ['name' => $name, 'version' => $version, 'file' => $file, 'type' => $type];
           }
         }
       }
-
       /**
        * @param string $package
        * @return array
@@ -250,19 +228,17 @@ namespace PathLoad {
         return ["$prefix@$major", $prefix, $suffix];
       }
     }
-
     function doRequire(string $file) {
       return require $file;
     }
+    
+
 
     class Psr4Autoloader {
-
       protected $prefixes = [];
-
       public function register() {
         spl_autoload_register([$this, 'loadClass']);
       }
-
       /**
        * Unregister loader with SPL autoloader stack.
        *
@@ -271,7 +247,6 @@ namespace PathLoad {
       public function unregister() {
         spl_autoload_unregister([$this, 'loadClass']);
       }
-
       /**
        * Adds a base directory for a namespace prefix.
        *
@@ -290,7 +265,6 @@ namespace PathLoad {
         if (isset($this->prefixes[$prefix]) === FALSE) {
           $this->prefixes[$prefix] = [];
         }
-
         if ($prepend) {
           array_unshift($this->prefixes[$prefix], $base_dir);
         }
@@ -298,18 +272,14 @@ namespace PathLoad {
           array_push($this->prefixes[$prefix], $base_dir);
         }
       }
-
       /**
        * Loads the class file for a given class name.
        *
        * @param string $class The fully-qualified class name.
-       *
-       * @return mixed The mapped file name on success, or boolean false on
-       * failure.
+       * @return mixed The mapped file name on success, or boolean false on failure.
        */
       public function loadClass($class) {
         $prefix = $class;
-
         while (FALSE !== $pos = strrpos($prefix, '\\')) {
           $prefix = substr($class, 0, $pos + 1);
           $relative_class = substr($class, $pos + 1);
@@ -317,21 +287,18 @@ namespace PathLoad {
           if ($mapped_file) {
             return $mapped_file;
           }
-
           $prefix = rtrim($prefix, '\\');
         }
-
         return FALSE;
       }
-
       /**
        * Load the mapped file for a namespace prefix and relative class.
        *
        * @param string $prefix The namespace prefix.
        * @param string $relative_class The relative class name.
-       *
-       * @return mixed Boolean false if no mapped file can be loaded, or the
-       * name of the mapped file that was loaded.
+       * @return mixed
+       *   Boolean false if no mapped file can be loaded, or the
+       *   name of the mapped file that was loaded.
        */
       protected function loadMappedFile($prefix, $relative_class) {
         if (isset($this->prefixes[$prefix]) === FALSE) {
@@ -345,7 +312,6 @@ namespace PathLoad {
         }
         return FALSE;
       }
-
       /**
        * If a file exists, require it from the file system.
        *
@@ -360,6 +326,8 @@ namespace PathLoad {
         return FALSE;
       }
     }
+    
+
   }
 }
 
@@ -377,4 +345,3 @@ namespace {
 
   return pathload();
 }
-
