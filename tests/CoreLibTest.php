@@ -19,8 +19,12 @@ class CoreLibTest extends PathLoadTestCase {
 
     // This example uses loadPackage(). It doesn't involve namespace-autoloading.
 
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3.phar", 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3.phar", 'extralib@1' => NULL]);
   }
 
   public function testAddPackage_Phar_v123() {
@@ -32,8 +36,12 @@ class CoreLibTest extends PathLoadTestCase {
     ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
     pathload()->addPackage('corelib@1', 'Example\\', $libDir);
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3.phar", 'extralib@1' => NULL]);
   }
 
   public function testAddPackage_Php_v123() {
@@ -45,8 +53,12 @@ class CoreLibTest extends PathLoadTestCase {
     ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
     pathload()->addPackage('corelib@1', 'Example\\', $libDir);
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3.php", 'extralib@1' => NULL]);
   }
 
   public function testAddPackage_Phar_v160() {
@@ -61,6 +73,8 @@ class CoreLibTest extends PathLoadTestCase {
 
     $this->expectOutputLines(['hello from corelib v1.6.0']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.6.0.phar", 'extralib@1' => NULL]);
   }
 
   public function testAddPackage_Dir_v123() {
@@ -72,8 +86,12 @@ class CoreLibTest extends PathLoadTestCase {
     ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
     pathload()->addPackage('corelib@1', 'Example\\', $libDir);
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3", 'extralib@1' => NULL]);
   }
 
   public function testAddSearchDir_Phar_v123() {
@@ -86,8 +104,12 @@ class CoreLibTest extends PathLoadTestCase {
     pathload()->addSearchDir($libDir);
     pathload()->addPackage('corelib@1', 'Example\\');
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDir/corelib@1.2.3", 'extralib@1' => NULL]);
   }
 
   public function testAddSearchDir_SplitA() {
@@ -102,8 +124,12 @@ class CoreLibTest extends PathLoadTestCase {
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB);
     pathload()->addPackage('corelib@1', 'Example\\');
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.2.3']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDirA/corelib@1.2.3", 'extralib@1' => NULL]);
   }
 
   public function testAddSearchDir_SplitB() {
@@ -121,8 +147,12 @@ class CoreLibTest extends PathLoadTestCase {
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
     pathload()->addPackage('corelib@1', 'Example\\');
 
+    $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
+
     $this->expectOutputLines(['hello from corelib v1.6.0']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDirB/corelib@1.6.0", 'extralib@1' => NULL]);
   }
 
   public function testAddSearchDir_SplitC() {
@@ -142,6 +172,8 @@ class CoreLibTest extends PathLoadTestCase {
 
     $this->expectOutputLines(['hello from corelib v1.6.0']);
     \Example\CoreLib::greet();
+
+    $this->assertLoaded(['corelib@1' => "$libDirB/corelib@1.6.0.php", 'extralib@1' => NULL]);
   }
 
 }

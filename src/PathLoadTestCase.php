@@ -12,4 +12,11 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
     $this->expectOutputString(implode("\n", $lines) . "\n");
   }
 
+  public function assertLoaded(array $majorNamesFiles): void {
+    foreach ($majorNamesFiles as $majorName => $file) {
+      $actual = pathload()->resolvedPackages[$majorName]['file'] ?? NULL;
+      $this->assertEquals($actual, $file);
+    }
+  }
+
 }
