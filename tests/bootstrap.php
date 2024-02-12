@@ -41,8 +41,9 @@ function buildLibDir(string $name, array $libs): string {
   foreach ($libs as $libId => $libType) {
     switch ($libType) {
       case 'phar':
-        $from = srcPath("example/dist/$libId.phar");
-        $to = "$path/$libId.phar";
+      case 'php':
+        $from = srcPath("example/dist/$libId.$libType");
+        $to = "$path/$libId.$libType";
         symlink($from, $to);
         break;
 

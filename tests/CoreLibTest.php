@@ -36,6 +36,19 @@ class CoreLibTest extends PathLoadTestCase {
     \Example\CoreLib::greet();
   }
 
+  public function testAddPackage_Php_v123() {
+    $libDir = buildLibDir(__FUNCTION__, [
+      'corelib@1.0.0' => 'php',
+      'corelib@1.2.3' => 'php',
+    ]);
+
+    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    pathload()->addPackage('corelib@1', 'Example\\', $libDir);
+
+    $this->expectOutputLines(['hello from corelib v1.2.3']);
+    \Example\CoreLib::greet();
+  }
+
   public function testAddPackage_Phar_v160() {
     $libDir = buildLibDir(__FUNCTION__, [
       'corelib@1.0.0' => 'phar',
@@ -99,6 +112,25 @@ class CoreLibTest extends PathLoadTestCase {
     ]);
     $libDirB = buildLibDir(__FUNCTION__ . '/b', [
       'corelib@1.6.0' => 'dir',
+    ]);
+    $libDirC = buildLibDir(__FUNCTION__ . '/c', [
+      'corelib@1.2.3' => 'dir',
+    ]);
+
+    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
+    pathload()->addPackage('corelib@1', 'Example\\');
+
+    $this->expectOutputLines(['hello from corelib v1.6.0']);
+    \Example\CoreLib::greet();
+  }
+
+  public function testAddSearchDir_SplitC() {
+    $libDirA = buildLibDir(__FUNCTION__ . '/a', [
+      'corelib@1.0.0' => 'dir',
+    ]);
+    $libDirB = buildLibDir(__FUNCTION__ . '/b', [
+      'corelib@1.6.0' => 'php',
     ]);
     $libDirC = buildLibDir(__FUNCTION__ . '/c', [
       'corelib@1.2.3' => 'dir',
