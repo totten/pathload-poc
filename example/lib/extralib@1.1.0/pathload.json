@@ -1,0 +1,10 @@
+{
+  "autoload": {
+    "psr-4": {
+      "Example\\": ["src/"]
+    }
+  },
+  "require-namespace": [
+    {"package": "corelib@1", "prefix": "Example\\"}
+  ]
+}

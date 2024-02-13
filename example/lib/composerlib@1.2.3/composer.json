@@ -1,0 +1,8 @@
+{
+  "name": "example/composerlib",
+  "autoload": {
+    "psr-4": {
+      "ComposerLib\\": ["ComposerLib/"]
+    }
+  }
+}

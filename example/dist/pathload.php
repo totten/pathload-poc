@@ -7,6 +7,18 @@ namespace {
      * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
      * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
      * @method PathLoadInterface import(array $all, string $baseDir = '')
+     *
+     * When you need resources from a package, call loadPackage(). This locates the
+     * relevant files and loads them. In general, this shouldn't be necessary because
+     * packages are autoloaded.
+     *
+     * @method PathLoadInterface loadPackage(string $package)
+     *
+     * The activatePackage() method is for package-implementers. If you are distributing as
+     * a singular PHP file (`cloud-io@1.0.0.php`), then you cannot use `pathload.json`.
+     * instead, call this method.
+     *
+     * @method PathLoadInterface activatePackage(string $package, string $dir, array $config)
      */
     interface PathLoadInterface {
       // Use soft type-hints. If the contract changes, we won't be able to
@@ -320,6 +332,9 @@ namespace PathLoad\V0 {
        * @return $this
        */
       public function loadPackage(string $package): PathLoad {
+        if (isset($this->resolvedPackages[$package])) {
+          return $this;
+        }
         $packageInfo = $this->resolve($package);
         switch ($packageInfo['type'] ?? NULL) {
           case 'php':
@@ -327,10 +342,10 @@ namespace PathLoad\V0 {
             return $this;
           case 'phar':
             doRequire($packageInfo['file']);
-            $this->useMetadataFiles('phar://' . $packageInfo['file']);
+            $this->useMetadataFiles($packageInfo, 'phar://' . $packageInfo['file']);
             return $this;
           case 'dir':
-            $this->useMetadataFiles($packageInfo['file']);
+            $this->useMetadataFiles($packageInfo, $packageInfo['file']);
             return $this;
           default:
             error_log("Failed to load package \"$package\".");
@@ -341,36 +356,63 @@ namespace PathLoad\V0 {
        * When loading a package, you may find metadata files
        * like "pathload.php" or "composer.json". Load these.
        *
+       * @param array $packageInfo
+       *   Ex: ['name' => 'cloud-io', 'version' => '1.2.0', 'file' => 'cloud-io@1.2.0.phar']'
        * @param string $dir
        *   Ex: '/var/www/lib/cloud-io@1.2.0'
        *   Ex: 'phar:///var/www/lib/cloud-io@1.2.0.phar'
        */
-      protected function useMetadataFiles(string $dir): void {
-        $bootFile = "$dir/.config/pathload.php";
-        if ($bootFile) {
+      protected function useMetadataFiles(array $packageInfo, string $dir): void {
+        $bootFile = "$dir/pathload.php";
+        if (file_exists($bootFile)) {
           require $bootFile;
+        }
+        $pathloadJsonFile = "$dir/pathload.json";
+        if (file_exists($pathloadJsonFile)) {
+          $pathloadJsonData = file_get_contents($pathloadJsonFile);
+          $pathLoadJson = json_decode($pathloadJsonData, TRUE);
+          $packageId = $packageInfo['name'] . '@' . $packageInfo['version'];
+          $this->activatePackage($packageId, $dir, $pathLoadJson);
         }
         $composerJsonFile = "$dir/composer.json";
         if (file_exists($composerJsonFile)) {
           $composerJsonData = file_get_contents($composerJsonFile);
-          $compserJson = \json_decode($composerJsonData, TRUE);
-          if (!empty($compserJson['autoload']['include'])) {
-            // Would it be better to just warn? We can't really do the same semantics, but this
-            // arguably might help in some cases.
-            foreach ($compserJson['autoload']['include'] as $file) {
-              doRequire($dir . '/' . $file);
-            }
-          }
-          foreach ($compserJson['autoload']['psr-4'] ?? [] as $prefix => $relPaths) {
-            foreach ($relPaths as $relPath) {
-              $this->psr4Classloader->addNamespace($prefix, $dir . '/' . $relPath);
-            }
-          }
-          foreach ($compserJson['autoload']['psr-0'] ?? [] as $prefix => $relPath) {
-            error_log("TODO: Load psr-0 data from $composerJsonFile ($prefix => $relPath");
-            // $this->psr4Classloader->addNamespace($prefix, $relPath);
+          $composerJson = \json_decode($composerJsonData, TRUE);
+          if (isset($composerJson['autoload'])) {
+            $this->psr4Classloader->addAutoloadJson($dir, $composerJson['autoload']);
           }
         }
+      }
+      /**
+       * @param string $name
+       *   Ex: 'cloud-io@1'
+       *   Ex: 'cloud-io@1.2.3'
+       * @param string|null $dir
+       *   Used for applying the 'autoload' rules.
+       *   Ex: '/var/www/lib/cloud-io@1.2.3'
+       * @param array $config
+       *   Ex: ['autoload' => ['psr4' => ...], 'require-namespace' => [...], 'require-package' => [...]]
+       *
+       * @return \PathLoadInterface
+       */
+      public function activatePackage(string $name, ?string $dir, array $config): \PathLoadInterface {
+        if (isset($config['autoload'])) {
+          if ($dir === NULL) {
+            throw new \RuntimeException("Cannot activate package $name. The 'autoload' property requires a base-directory.");
+          }
+          $this->psr4Classloader->addAutoloadJson($dir, $config['autoload']);
+          foreach ($config['require-namespace'] ?? [] as $nsRule) {
+            foreach ((array) $nsRule['package'] as $package) {
+              foreach ((array) $nsRule['prefix'] as $prefix) {
+                $this->availableNamespaces[$prefix][$package] = $package;
+              }
+            }
+          }
+          foreach ($config['require-package'] ?? [] as $package) {
+            $this->loadPackage($package);
+          }
+        }
+        return $this;
       }
       /**
        * @param string $package
@@ -459,6 +501,24 @@ namespace PathLoad\V0 {
        * @internal
        */
       public $prefixes = [];
+      public function addAutoloadJson(string $dir, array $autoloadJson) {
+        if (!empty($autoloadJson['include'])) {
+          // Would it be better to just warn? We can't really do the same semantics, but this
+          // arguably might help in some cases.
+          foreach ($autoloadJson['include'] as $file) {
+            $this->requireFile($dir . '/' . $file);
+          }
+        }
+        foreach ($autoloadJson['psr-4'] ?? [] as $prefix => $relPaths) {
+          foreach ($relPaths as $relPath) {
+            $this->addNamespace($prefix, $dir . '/' . $relPath);
+          }
+        }
+        foreach ($autoloadJson['psr-0'] ?? [] as $prefix => $relPath) {
+          error_log("TODO: Load psr-0 data from $dir ($prefix => $relPath");
+          // $this->addNamespace($prefix, $relPath);
+        }
+      }
       /**
        * Adds a base directory for a namespace prefix.
        *

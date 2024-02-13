@@ -5,6 +5,18 @@
  * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
  * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
  * @method PathLoadInterface import(array $all, string $baseDir = '')
+ *
+ * When you need resources from a package, call loadPackage(). This locates the
+ * relevant files and loads them. In general, this shouldn't be necessary because
+ * packages are autoloaded.
+ *
+ * @method PathLoadInterface loadPackage(string $package)
+ *
+ * The activatePackage() method is for package-implementers. If you are distributing as
+ * a singular PHP file (`cloud-io@1.0.0.php`), then you cannot use `pathload.json`.
+ * instead, call this method.
+ *
+ * @method PathLoadInterface activatePackage(string $package, string $dir, array $config)
  */
 interface PathLoadInterface {
 

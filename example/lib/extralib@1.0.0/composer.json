@@ -1,8 +1,0 @@
-{
-  "name": "example/extralib",
-  "autoload": {
-    "psr-4": {
-      "Example\\": ["src/"]
-    }
-  }
-}

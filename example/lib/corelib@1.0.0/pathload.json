@@ -1,5 +1,4 @@
 {
-  "name": "example/corelib",
   "autoload": {
     "psr-4": {
       "Example\\": ["Example/"]

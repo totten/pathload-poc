@@ -16,7 +16,7 @@ fi
 
 cp "$MAIN/dist/pathload-latest.php" "$EXAMPLES/dist/pathload.php"
 
-for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'corelib@1.6.0' 'extralib@1.0.0' ; do
+for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'corelib@1.6.0' 'extralib@1.0.0' 'extralib@1.1.0' 'composerlib@1.0.0' 'composerlib@1.2.3' ; do
   pushd "lib/$pkg"
     [ -f "$DIST/$pkg.phar" ] && rm -f "$DIST/$pkg.phar" || true
     find -name '*~' -delete

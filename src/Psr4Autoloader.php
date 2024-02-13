@@ -9,6 +9,25 @@ class Psr4Autoloader {
    */
   public $prefixes = [];
 
+  public function addAutoloadJson(string $dir, array $autoloadJson) {
+    if (!empty($autoloadJson['include'])) {
+      // Would it be better to just warn? We can't really do the same semantics, but this
+      // arguably might help in some cases.
+      foreach ($autoloadJson['include'] as $file) {
+        $this->requireFile($dir . '/' . $file);
+      }
+    }
+    foreach ($autoloadJson['psr-4'] ?? [] as $prefix => $relPaths) {
+      foreach ($relPaths as $relPath) {
+        $this->addNamespace($prefix, $dir . '/' . $relPath);
+      }
+    }
+    foreach ($autoloadJson['psr-0'] ?? [] as $prefix => $relPath) {
+      error_log("TODO: Load psr-0 data from $dir ($prefix => $relPath");
+      // $this->addNamespace($prefix, $relPath);
+    }
+  }
+
   /**
    * Adds a base directory for a namespace prefix.
    *
