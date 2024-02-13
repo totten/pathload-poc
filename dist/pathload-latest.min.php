@@ -194,7 +194,7 @@ namespace PathLoad\V0 {
         }
       }
       protected function useMetadataFiles(array $packageInfo, string $dir): void {
-        $bootFile = "$dir/pathload.php";
+        $bootFile = "$dir/pathload.main.php";
         if (file_exists($bootFile)) {
           require $bootFile;
         }

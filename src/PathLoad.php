@@ -320,7 +320,7 @@ class PathLoad implements \PathLoadInterface {
 
   /**
    * When loading a package, you may find metadata files
-   * like "pathload.php" or "composer.json". Load these.
+   * like "pathload.main.php", "pathload.json", or "composer.json". Load these.
    *
    * @param array $packageInfo
    *   Ex: ['name' => 'cloud-io', 'version' => '1.2.0', 'file' => 'cloud-io@1.2.0.phar']'
@@ -329,7 +329,7 @@ class PathLoad implements \PathLoadInterface {
    *   Ex: 'phar:///var/www/lib/cloud-io@1.2.0.phar'
    */
   protected function useMetadataFiles(array $packageInfo, string $dir): void {
-    $bootFile = "$dir/pathload.php";
+    $bootFile = "$dir/pathload.main.php";
     if (file_exists($bootFile)) {
       require $bootFile;
     }

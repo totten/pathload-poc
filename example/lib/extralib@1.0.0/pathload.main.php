@@ -1,7 +1,8 @@
 <?php
+namespace ExtraLib;
 
 // Classes in 'extralib' depend on packages from 'corelib@1'.
-pathload()->activatePackage('extralib@1' , __DIR__, [
+\pathload()->activatePackage('extralib@1' , __DIR__, [
   'autoload' => [
     'psr-4' => [
       'Example\\' => ['src/'],
@@ -11,5 +12,3 @@ pathload()->activatePackage('extralib@1' , __DIR__, [
     ['package' => 'corelib@1', 'prefix' => 'Example\\'],
   ]
 ]);
-
-__HALT_COMPILER();
