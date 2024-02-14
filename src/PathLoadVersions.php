@@ -19,10 +19,11 @@ class PathLoadVersions implements \ArrayAccess {
     $this->top = $top;
   }
 
-  public function offsetExists($version) {
+  public function offsetExists($version): bool {
     return ($version === 'top' || $version <= $this->top->version);
   }
 
+  #[\ReturnTypeWillChange]
   public function offsetGet($version) {
     if ($version === 'top' || $version <= $this->top->version) {
       return $this->top;
@@ -30,11 +31,11 @@ class PathLoadVersions implements \ArrayAccess {
     return NULL;
   }
 
-  public function offsetSet($offset, $value) {
+  public function offsetSet($offset, $value): void {
     error_log("Cannot overwrite PathLoad[$offset]");
   }
 
-  public function offsetUnset($offset) {
+  public function offsetUnset($offset): void {
     error_log("Cannot remove PathLoad[$offset]");
   }
 
