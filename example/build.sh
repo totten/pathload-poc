@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Take the library folders in `./lib`. Conver them to `*.phar` and `*.php` builds.
+
 EXAMPLES=$PWD
 DIST=$PWD/dist
 MAIN=$(dirname "$EXAMPLES")
