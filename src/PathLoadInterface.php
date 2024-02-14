@@ -15,12 +15,9 @@
  * (PathLoad v0) Declare knowledge about what packages are available. These provide
  * hints for autoloading.
  *
+ * The third argument, `$baseDir`, is experimental
+ *
  * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
- * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
- *
- * (PathLoad v0, experimental)
- *
- * @method PathLoadInterface import(array $all, string $baseDir = '')
  *
  * (Pathload v0) When you need resources from a package, call loadPackage().
  * This locates the relevant files and loads them.
