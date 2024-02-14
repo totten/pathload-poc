@@ -11,17 +11,24 @@ Classes are loaded from a _search-path_ (`PHP_PATHLOAD`) with priority based on 
 Each contains versioned libraries (eg `cloud-file-io@1.2.3`). Libraries may be plain PHP files, PHAR archives, or subdirectories.
 
 * `/var/www/app/addon-1/lib/`
-    * `cloud-file-io@1.1.0.php` (*plain file style*)
-    * `yaml-util@1.0.0.php` (*plain file style*)
+    * `cloud-file-io@1.1.0.php` (*plain file*)
+    * `yaml-util@1.0.0.php` (*plain file*)
 * `/var/www/app/addon-2/lib/`
-    * `console-lib@2.0.0.phar` (*PHAR-style*)
-    * `cloud-file-io@1.2.3.phar` (*PHAR-style*)
+    * `console-lib@2.0.0.phar` (*PHAR*)
+    * `cloud-file-io@1.2.3.phar` (*PHAR*)
 * `/usr/local/share/php-updates/`
-    * `yaml-util@1.0.5` (*subdirectory-style*)
+    * `yaml-util@1.0.5` (*subdirectory*)
 
 The challenge for these PHP application-modules is that they must load one version of any library, and their deployment tools (`wget`, `svn`, `git`, `drush dl`, etc) do not reconcile library versions.
 
-PathLoad is a protocol where multiple parties may independently distribute the same libraries -- with old versions yielding to newer replacements. It can be retrofitted into existing platforms. Multiple module-developers may ship the same libraries. Site-builders and security-tools may deploy updated libraries without modifying the application-modules. You simply copy an updated library onto the search-path.
+PathLoad is a protocol where multiple parties (*modules; frameworks; operating systems*) may independently distribute the same libraries -- with old versions yielding to newer replacements. It can be retrofitted into existing platforms. Multiple module-developers may ship the same libraries. Site-builders and security-tools may deploy updated libraries without modifying the application-modules. You simply copy an updated library onto the search-path.
+
+PathLoad is designed around [Semantic Versioning](https://semver.org/). `MINOR` and `PATCH` increments must be backward-compatible. `MAJOR` increments are treated as separate packages (*loaded concurrently*). New libraries can incorporate these requirements, but existing libraries may require [adaptations](https://github.com/humbug/php-scoper).
+
+The project is presented as proof-of-concept. Its APIs should work as advertised, and it includes tests. But there are complementary topics for further investigation -- especially:
+
+* Benchmarking and optimization
+* Build and distribution of library archives
 
 ## Usage (Module Developer)
 
@@ -51,9 +58,9 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
 
 3. Now, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
 4. Pathload integrates into the autoloader. When you actually use `\CloudFileIO\Amazon\S3`, it observes the namespace and loads `cloud-file-io@*.phar`. This will use the best-available version:
-    * If your plugin is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
-    * If another plugin includes a newer version (`cloud-file-io@1.5.0.phar`), then that will be loaded instead.
-    * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
+    * If your module is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
+    * If another module includes a newer version (`cloud-file-io@1.5.0.phar`), then that will be loaded instead.
+    * If another module includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
     * The choice of "best available version" abides SemVer and its compatibility rules -- version 1.5.0 can automatically replace 1.2.3 and 1.0.0. But 2.0.0 may not automatically replace 1.5.0.
 
 ## Usage (Administrator)
