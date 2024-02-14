@@ -205,14 +205,6 @@ namespace PathLoad\V0 {
           $packageId = $packageInfo['name'] . '@' . $packageInfo['version'];
           $this->activatePackage($packageId, $dir, $pathLoadJson);
         }
-        $composerJsonFile = "$dir/composer.json";
-        if (file_exists($composerJsonFile)) {
-          $composerJsonData = file_get_contents($composerJsonFile);
-          $composerJson = \json_decode($composerJsonData, TRUE);
-          if (isset($composerJson['autoload'])) {
-            $this->psr4Classloader->addAutoloadJson($dir, $composerJson['autoload']);
-          }
-        }
       }
       public function activatePackage(string $name, ?string $dir, array $config): \PathLoadInterface {
         if (isset($config['autoload'])) {

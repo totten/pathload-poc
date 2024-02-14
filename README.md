@@ -118,8 +118,8 @@ cd example
 Let's consider our example library, `cloud-file-io@1.2.3`. The emphasis here has been placed on PHAR packages. However, PathLoad POC can read libraries in a few formats:
 
 * `./dist/cloud-file-io@1.2.3.php`: PHP source file. Loading this file should provide all the necessary classes (or setup a classloader).
-* `./dist/cloud-file-io@1.2.3.phar`: PHP archive file. It should setup a classoader using `pathload.main.php`, `pathload.json`, and/or `composer.json` (or using a custom "stub").
-* `./dist/cloud-file-io@1.2.3`: Local directory. It should setup a classloader using `pathload.main.php`, `pathload.json`, and/or `composer.json`.
+* `./dist/cloud-file-io@1.2.3.phar`: PHP archive file. It should setup a classoader using `pathload.main.php` or `pathload.json` (or using a custom "stub").
+* `./dist/cloud-file-io@1.2.3`: Local directory. It should setup a classloader using `pathload.main.php` or `pathload.json`.
 
 ## Discussion
 

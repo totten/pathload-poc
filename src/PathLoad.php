@@ -320,7 +320,7 @@ class PathLoad implements \PathLoadInterface {
 
   /**
    * When loading a package, you may find metadata files
-   * like "pathload.main.php", "pathload.json", or "composer.json". Load these.
+   * like "pathload.main.php" or "pathload.json". Load these.
    *
    * @param array $packageInfo
    *   Ex: ['name' => 'cloud-io', 'version' => '1.2.0', 'file' => 'cloud-io@1.2.0.phar']'
@@ -340,15 +340,6 @@ class PathLoad implements \PathLoadInterface {
       $pathLoadJson = json_decode($pathloadJsonData, TRUE);
       $packageId = $packageInfo['name'] . '@' . $packageInfo['version'];
       $this->activatePackage($packageId, $dir, $pathLoadJson);
-    }
-
-    $composerJsonFile = "$dir/composer.json";
-    if (file_exists($composerJsonFile)) {
-      $composerJsonData = file_get_contents($composerJsonFile);
-      $composerJson = \json_decode($composerJsonData, TRUE);
-      if (isset($composerJson['autoload'])) {
-        $this->psr4Classloader->addAutoloadJson($dir, $composerJson['autoload']);
-      }
     }
   }
 
