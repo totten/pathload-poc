@@ -3,10 +3,10 @@
 namespace {
   if (!interface_exists('PathLoadInterface')) {
     /**
-     * The PathLoad interface is defined via soft signatures rather than hard signatures.
-     * In the event of future language changes or contract changes. This matters
-     * when multiple parties inject PathLoad support onto a pre-existing framework.
-     * The soft signatures give wiggle-room to address interoperability/conversin.
+     * The PathLoad interface is defined via soft signatures ("duck-typing") rather than hard signatures.
+     * This matters when multiple parties inject PathLoad support onto a pre-existing framework.
+     * In the event of future language changes or contract changes, the soft signatures
+     * give wiggle-room to address interoperability/conversion.
      *
      * ==== PACKAGE CONSUMER APIS ===
      *
