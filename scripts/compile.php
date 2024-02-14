@@ -3,7 +3,9 @@
 
 namespace PathLoad\Build;
 
-define('PATHLOAD_VERSION', 0);
+// This should give the real/default version. However, for purposes
+// of hacking/experimenting, you can override the version# during compilation.
+define('PATHLOAD_VERSION', getenv('PATHLOAD_VERSION') ?: 0);
 
 /**
  * Ex: prjdir('dist')
