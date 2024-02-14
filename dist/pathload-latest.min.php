@@ -1,6 +1,9 @@
 <?php
 
 namespace {
+  if (isset($GLOBALS['_PathLoad'][0])) {
+    return $GLOBALS['_PathLoad'][0];
+  }
   if (!interface_exists('PathLoadInterface')) {
     /**
      * The PathLoad interface is defined via soft signatures ("duck-typing") rather than hard signatures.
@@ -338,9 +341,8 @@ namespace PathLoad\V0 {
 }
 
 namespace {
-  if (!isset($GLOBALS['_PathLoad'][0])) {
-    $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
-  }
+  // New or upgraded instance.
+  $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
   if (!function_exists('pathload')) {
     /**
      * Get a reference the PathLoad manager.

@@ -1,30 +1,45 @@
 <?php
 
 namespace {
+  if (isset($GLOBALS['_PathLoad'][0])) {
+    return $GLOBALS['_PathLoad'][0];
+  }
   if (!interface_exists('PathLoadInterface')) {
     /**
-     * @method PathLoadInterface addSearchDir(string $baseDir)
-     * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
-     * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
-     * @method PathLoadInterface import(array $all, string $baseDir = '')
+     * The PathLoad interface is defined via soft signatures ("duck-typing") rather than hard signatures.
+     * This matters when multiple parties inject PathLoad support onto a pre-existing framework.
+     * In the event of future language changes or contract changes, the soft signatures
+     * give wiggle-room to address interoperability/conversion.
      *
-     * When you need resources from a package, call loadPackage(). This locates the
-     * relevant files and loads them. In general, this shouldn't be necessary because
-     * packages are autoloaded.
+     * ==== PACKAGE CONSUMER APIS ===
+     *
+     * (PathLoad v0) Enable autoloading of `*.phar`, `*.php`, and folders from a search directory.
+     *
+     * @method PathLoadInterface addSearchDir(string $baseDir)
+     *
+     * (PathLoad v0) Declare knowledge about what packages are available. These provide
+     * hints for autoloading.
+     *
+     * The third argument, `$baseDir`, is experimental
+     *
+     * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
+     *
+     * (Pathload v0) When you need resources from a package, call loadPackage().
+     * This locates the relevant files and loads them.
+     * If you use namespace-autoloading, then this shouldn't be necessary.
      *
      * @method PathLoadInterface loadPackage(string $package)
      *
-     * The activatePackage() method is for package-implementers. If you are distributing as
-     * a singular PHP file (`cloud-io@1.0.0.php`), then you cannot use `pathload.json`.
-     * instead, call this method.
+     * ==== PACKAGE PROVIDER APIS ====
+     *
+     * (PathLoad v0) Activate your package. This allows you to add metadata about activating
+     * your own package. In particular, this may be necessary if you have transitive
+     * dependencies. This would be appropriate for single-file PHP package (`cloud-io@1.0.0.php`)
+     * which lack direct support for `pathload.json`.
      *
      * @method PathLoadInterface activatePackage(string $package, string $dir, array $config)
      */
     interface PathLoadInterface {
-      // Use soft type-hints. If the contract changes, we won't be able to
-      // un-publish or block old implementations, and they need to coexist.
-      // This will give us wiggle-room while also giving type-hints in average case.
-
     }
   }
 }
@@ -48,19 +63,20 @@ namespace PathLoad\V0 {
       public function __construct($top) {
         $this->top = $top;
       }
-      public function offsetExists($version) {
+      public function offsetExists($version): bool {
         return ($version === 'top' || $version <= $this->top->version);
       }
+      #[\ReturnTypeWillChange]
       public function offsetGet($version) {
         if ($version === 'top' || $version <= $this->top->version) {
           return $this->top;
         }
         return NULL;
       }
-      public function offsetSet($offset, $value) {
+      public function offsetSet($offset, $value): void {
         error_log("Cannot overwrite PathLoad[$offset]");
       }
-      public function offsetUnset($offset) {
+      public function offsetUnset($offset): void {
         error_log("Cannot remove PathLoad[$offset]");
       }
     }
@@ -219,53 +235,12 @@ namespace PathLoad\V0 {
        * @param string|string[] $namespaces
        *   Ex: 'Super\Cloud\IO\'
        */
-      public function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
+      private function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
         $namespaces = (array) $namespaces;
         foreach ($namespaces as $namespace) {
           $this->availableNamespaces[$namespace][$package] = $package;
         }
         return $this;
-      }
-      /**
-       * Add a batch of information.
-       *
-       * @param array $all
-       *   Ex: ['searchDirs' => [ ['/var/www/lib'], ['/usr/local/share/php'] ]]
-       *   Ex: ['packages' => [ ['cloud-io@1', '] ]]
-       * @param string $baseDir
-       * @return \PathLoadInterface
-       */
-      public function import(array $all, string $baseDir = ''): \PathLoadInterface {
-        foreach ($all['searchDirs'] ?? [] as $tuple) {
-          $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
-        }
-        foreach ($all['packages'] ?? [] as $tuple) {
-          $this->addPackage($tuple[0], $tuple[1], isset($tuple[2]) ? $this->withBaseDir($tuple[2], $baseDir) : NULL);
-        }
-        foreach ($all['packageNamespaces'] ?? [] as $tuple) {
-          $this->addPackageNamespace($tuple[0], $tuple[1]);
-        }
-        return $this;
-      }
-      /**
-       * @param string|null $path
-       * @param string|null $prefix
-       * @return string
-       *   If $path is absolute, then return that.
-       *   If $path is relative, then prepend the $prefix.
-       *
-       */
-      protected function withBaseDir(?string $path, ?string $prefix): string {
-        if ($path === NULL || $prefix === NULL) {
-          return $path;
-        }
-        if (DIRECTORY_SEPARATOR === '/' && $path[0] === DIRECTORY_SEPARATOR) {
-          return $path;
-        }
-        if (DIRECTORY_SEPARATOR === '\\' && isset($path[1]) && $path[1] === ':') {
-          return $path;
-        }
-        return $prefix . $path;
       }
       /**
        * Register the autoloader.
@@ -354,7 +329,7 @@ namespace PathLoad\V0 {
       }
       /**
        * When loading a package, you may find metadata files
-       * like "pathload.main.php", "pathload.json", or "composer.json". Load these.
+       * like "pathload.main.php" or "pathload.json". Load these.
        *
        * @param array $packageInfo
        *   Ex: ['name' => 'cloud-io', 'version' => '1.2.0', 'file' => 'cloud-io@1.2.0.phar']'
@@ -373,14 +348,6 @@ namespace PathLoad\V0 {
           $pathLoadJson = json_decode($pathloadJsonData, TRUE);
           $packageId = $packageInfo['name'] . '@' . $packageInfo['version'];
           $this->activatePackage($packageId, $dir, $pathLoadJson);
-        }
-        $composerJsonFile = "$dir/composer.json";
-        if (file_exists($composerJsonFile)) {
-          $composerJsonData = file_get_contents($composerJsonFile);
-          $composerJson = \json_decode($composerJsonData, TRUE);
-          if (isset($composerJson['autoload'])) {
-            $this->psr4Classloader->addAutoloadJson($dir, $composerJson['autoload']);
-          }
         }
       }
       /**
@@ -602,9 +569,8 @@ namespace PathLoad\V0 {
 }
 
 namespace {
-  if (!isset($GLOBALS['_PathLoad'][0])) {
-    $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
-  }
+  // New or upgraded instance.
+  $GLOBALS['_PathLoad'] = \PathLoad\V0\PathLoad::create(0, $GLOBALS['_PathLoad']['top'] ?? NULL);
   if (!function_exists('pathload')) {
     /**
      * Get a reference the PathLoad manager.
