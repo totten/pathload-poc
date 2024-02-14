@@ -17,12 +17,9 @@ namespace {
      * (PathLoad v0) Declare knowledge about what packages are available. These provide
      * hints for autoloading.
      *
+     * The third argument, `$baseDir`, is experimental
+     *
      * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
-     * @method PathLoadInterface addPackageNamespace(string $package, $namespaces)
-     *
-     * (PathLoad v0, experimental)
-     *
-     * @method PathLoadInterface import(array $all, string $baseDir = '')
      *
      * (Pathload v0) When you need resources from a package, call loadPackage().
      * This locates the relevant files and loads them.
@@ -235,53 +232,12 @@ namespace PathLoad\V0 {
        * @param string|string[] $namespaces
        *   Ex: 'Super\Cloud\IO\'
        */
-      public function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
+      private function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
         $namespaces = (array) $namespaces;
         foreach ($namespaces as $namespace) {
           $this->availableNamespaces[$namespace][$package] = $package;
         }
         return $this;
-      }
-      /**
-       * Add a batch of information.
-       *
-       * @param array $all
-       *   Ex: ['searchDirs' => [ ['/var/www/lib'], ['/usr/local/share/php'] ]]
-       *   Ex: ['packages' => [ ['cloud-io@1', '] ]]
-       * @param string $baseDir
-       * @return \PathLoadInterface
-       */
-      public function import(array $all, string $baseDir = ''): \PathLoadInterface {
-        foreach ($all['searchDirs'] ?? [] as $tuple) {
-          $this->addSearchDir($this->withBaseDir($tuple[0], $baseDir));
-        }
-        foreach ($all['packages'] ?? [] as $tuple) {
-          $this->addPackage($tuple[0], $tuple[1], isset($tuple[2]) ? $this->withBaseDir($tuple[2], $baseDir) : NULL);
-        }
-        foreach ($all['packageNamespaces'] ?? [] as $tuple) {
-          $this->addPackageNamespace($tuple[0], $tuple[1]);
-        }
-        return $this;
-      }
-      /**
-       * @param string|null $path
-       * @param string|null $prefix
-       * @return string
-       *   If $path is absolute, then return that.
-       *   If $path is relative, then prepend the $prefix.
-       *
-       */
-      protected function withBaseDir(?string $path, ?string $prefix): string {
-        if ($path === NULL || $prefix === NULL) {
-          return $path;
-        }
-        if (DIRECTORY_SEPARATOR === '/' && $path[0] === DIRECTORY_SEPARATOR) {
-          return $path;
-        }
-        if (DIRECTORY_SEPARATOR === '\\' && isset($path[1]) && $path[1] === ':') {
-          return $path;
-        }
-        return $prefix . $path;
       }
       /**
        * Register the autoloader.
