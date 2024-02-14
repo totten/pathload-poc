@@ -118,7 +118,7 @@ class PathLoad implements \PathLoadInterface {
    *   Ex: '/var/www/lib/*@*' or '/var/www/lib/cloud-io@1*.phar'
    * @return $this
    */
-  public function addSearchRule(string $package, string $glob): \PathLoadInterface {
+  private function addSearchRule(string $package, string $glob): \PathLoadInterface {
     if (!isset($this->resolvedSearchRules[$glob])) {
       $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
     }
@@ -145,21 +145,9 @@ class PathLoad implements \PathLoadInterface {
    *   Ex: ['DB_', 'GuzzleHttp\\']
    * @param string|array $namespaces
    *   Ex: 'foobar@1'
-   * @param string|NULL $baseDir
-   *   (EXPERIMENTAL) Add a search-rule just for this package. In theory, if used systemically, this would mean
-   *   fewer calls to `glob()` for unused packages.
-   *   Ex: '/var/www/myapp/lib'
    */
-  public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
+  public function addPackage(string $package, $namespaces): \PathLoadInterface {
     $this->addPackageNamespace($package, $namespaces);
-
-    if ($baseDir) {
-      $glob = strpos($package, '@') === FALSE
-        ? "{$baseDir}/{$package}@*"
-        : "{$baseDir}/{$package}*";
-      $this->addSearchRule($package, $glob);
-    }
-
     return $this;
   }
 

@@ -4,8 +4,11 @@
 // Enable Pathload API
 ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php');
 
-// Bind a namespace to a package. If "Example\*" classes are used, then "corelib@1" will be loaded.
-pathload()->addPackage('corelib@1', 'Example\\', __DIR__ . '/dist');
+pathload()
+  // Add "./dist" to the search-path.
+  ->addSearchDir(__DIR__ . '/dist')
+  // Bind a namespace to a package. If "Example\*" classes are accessed, then load "corelib@1" and "extralib@1".
+  ->addPackage('corelib@1', 'Example\\');
 
 // Use some classes
 Example\CoreLib::greet();
