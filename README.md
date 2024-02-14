@@ -2,49 +2,55 @@
 
 This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*in the sense of WordPress plugins, Drupal 7 modules, Backdrop modules, etc*).
 
-Classes are loaded from a _search-path_ with priority based on _version number_. For example, the *search-path* might list 3 directories. Each directory has versioned PHAR libraries.
+Classes are loaded from a _search-path_ (`PHP_PATHLOAD`) with priority based on _version-number_. For example, the *search-path* might list three locations:
 
-* `/var/www/app/addon-1/dist/`
-    * `console-lib@2.0.0.phar`
-    * `cloud-file-io@1.2.3.phar`
-* `/var/www/app/addon-2/dist/`
-    * `cloud-file@1.1.0.phar`
-    * `yaml-util@1.0.0.phar`
+* `/var/www/app/addon-1/lib/`
+* `/var/www/app/addon-2/lib/`
 * `/usr/local/share/php-updates/`
-    * `yaml-util@1.0.5.phar`
+
+Each contains versioned libraries (eg `cloud-file-io@1.2.3`). Libraries may be plain PHP files, PHAR archives, or subdirectories.
+
+* `/var/www/app/addon-1/lib/`
+    * `cloud-file-io@1.1.0.php` (*plain file style*)
+    * `yaml-util@1.0.0.php` (*plain file style*)
+* `/var/www/app/addon-2/lib/`
+    * `console-lib@2.0.0.phar` (*PHAR-style*)
+    * `cloud-file-io@1.2.3.phar` (*PHAR-style*)
+* `/usr/local/share/php-updates/`
+    * `yaml-util@1.0.5` (*subdirectory-style*)
 
 The challenge for these PHP application-modules is that they must load one version of any library, and their deployment tools (`wget`, `svn`, `git`, `drush dl`, etc) do not reconcile library versions.
 
-PathLoad is a protocol where each addon may independently distribute its preferred libraries -- but old libraries will yield to new replacements. It works even if the host application (*WP, D7*) lacks support, and it allows multiple developers to ship the same library. It also means that site-builders and security-tools may deploy updated libraries without modifying the application-modules -- you simply copy an updated library onto the search-path.
+PathLoad is a protocol where multiple parties may independently distribute the same libraries -- with old versions yielding to newer replacements. It can be retrofitted into existing platforms. Multiple module-developers may ship the same libraries. Site-builders and security-tools may deploy updated libraries without modifying the application-modules. You simply copy an updated library onto the search-path.
 
 ## Usage (Module Developer)
 
-Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io` (aka `cloud-file-io@1.2.3.phar`). Here's how to use it:
+Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io` (`cloud-file-io@1.2.3`). Here's how to use it:
 
-1. Download `cloud-file-io@1.2.3.phar` and `pathload.php` into your codebase (`$MY_MODULE/dist/`).
+1. Download `pathload-0.php` and `cloud-file-io@1.2.3.phar` into your library folder (`$MY_MODULE/lib/`).
 
     ```bash
-   mkdir $MY_MODULE/dist/
-   cd $MY_MODULE/dist/
-   wget https://example.com/download/pathload-latest.php.txt -O pathload.php
+   mkdir $MY_MODULE/lib/
+   cd $MY_MODULE/lib/
+   wget https://example.com/download/pathload-0.php.txt -O pathload-0.php
    wget https://example.com/download/cloud-file-io@1.2.3.phar -O cloud-file-io@1.2.3.phar
     ```
 
 2. In your application-module:
 
     ```php
-    // If necessary, load your copy of `pathload.php`.
-    ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php');
+    // Enable the pathload polyfill.
+    ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/lib/pathload-0.php');
 
-    // Register your `dist/` folder:
-    pathload()->addPackageDir(__DIR__ . '/dist');
+    // Register your `lib/` folder:
+    pathload()->addSearchDir(__DIR__ . '/lib');
 
     // Declare that you wish to use `cloud-file-io` v1.x
     pathload()->addPackage('cloud-file-io@1', 'CloudFileIO\\');
     ```
 
-3. Now, anywhere in your plugin, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
-4. At runtime, when you autoload `\CloudFileIO\Amazon\S3`, it observes the namespace and loads `cloud-file-io@*.phar`. This will use the best-available version:
+3. Now, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
+4. Pathload integrates into the autoloader. When you actually use `\CloudFileIO\Amazon\S3`, it observes the namespace and loads `cloud-file-io@*.phar`. This will use the best-available version:
     * If your plugin is the only one to include `cloud-file-io` (specifically `cloud-file-io@1.2.3.phar`), then it will load your version.
     * If another plugin includes a newer version (`cloud-file-io@1.5.0.phar`), then that will be loaded instead.
     * If another plugin includes an older version (`cloud-file-io@1.0.0.phar`), then that will be ignored.
