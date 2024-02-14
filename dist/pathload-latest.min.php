@@ -102,7 +102,7 @@ namespace PathLoad\V0 {
         $new->register();
         return new PathLoadVersions($new);
       }
-      public function addSearchRule(string $package, string $glob): \PathLoadInterface {
+      private function addSearchRule(string $package, string $glob): \PathLoadInterface {
         if (!isset($this->resolvedSearchRules[$glob])) {
           $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
         }
@@ -111,14 +111,8 @@ namespace PathLoad\V0 {
       public function addSearchDir(string $baseDir): \PathLoadInterface {
         return $this->addSearchRule('*', "$baseDir/*@*");
       }
-      public function addPackage(string $package, $namespaces, ?string $baseDir = NULL): \PathLoadInterface {
+      public function addPackage(string $package, $namespaces): \PathLoadInterface {
         $this->addPackageNamespace($package, $namespaces);
-        if ($baseDir) {
-          $glob = strpos($package, '@') === FALSE
-            ? "{$baseDir}/{$package}@*"
-            : "{$baseDir}/{$package}*";
-          $this->addSearchRule($package, $glob);
-        }
         return $this;
       }
       private function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
