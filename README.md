@@ -1,4 +1,4 @@
-# PathLoad PHP (Proof of concept)
+# PHP PathLoad (Proof of concept)
 
 This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*in the sense of WordPress plugins, Drupal 7 modules, Backdrop modules, etc*).
 
