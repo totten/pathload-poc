@@ -19,16 +19,14 @@ Each contains versioned libraries (eg `cloud-file-io@1.2.3`). Libraries may be p
 * `/usr/local/share/php-updates/`
     * `yaml-util@1.0.5` (*subdirectory*)
 
-The challenge for these PHP application-modules is that they must load one version of any library, and their deployment tools (`wget`, `svn`, `git`, `drush dl`, etc) do not reconcile library versions.
+The challenge for these PHP application-modules is that they must load one version of any library, and their deployment tools (`wget`, `svn`, `git`, `drush dl`, etc) do not reconcile library versions. PathLoad resolves versions by applying [Semantic Versioning](https://semver.org/). `MINOR` and `PATCH` increments must be backward-compatible. `MAJOR` increments are treated as separate packages (*loaded concurrently*).
 
 PathLoad is a protocol where multiple parties (*modules; frameworks; operating systems*) may independently distribute the same libraries -- with old versions yielding to newer replacements. It can be retrofitted into existing platforms. Multiple module-developers may ship the same libraries. Site-builders and security-tools may deploy updated libraries without modifying the application-modules. You simply copy an updated library onto the search-path.
-
-PathLoad is designed around [Semantic Versioning](https://semver.org/). `MINOR` and `PATCH` increments must be backward-compatible. `MAJOR` increments are treated as separate packages (*loaded concurrently*). New libraries can incorporate these requirements, but existing libraries may require [adaptations](https://github.com/humbug/php-scoper).
 
 The project is presented as proof-of-concept. Its APIs should work as advertised, and it includes tests. But there are complementary topics for further investigation -- especially:
 
 * Benchmarking and optimization
-* Build and distribution of library archives
+* Build and distribution of library archives (esp [adaptating](https://github.com/humbug/php-scoper) existing libraries to support `MAJOR` version coexistence)
 
 ## Usage (Module Developer)
 
