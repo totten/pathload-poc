@@ -40,7 +40,7 @@ function main() {
 function evalTemplate(bool $minify): string {
   $cleanup = ($minify ? '\PathLoad\Build\stripAllComments' : '\PathLoad\Build\stripInternalComments');
 
-  $template = read('polyfill-template.php');
+  $template = stripInternalComments(read('polyfill-template.php'));
   $phpSources = [
     'PathLoadInterface' => read('PathLoadInterface.php'),
 
@@ -89,7 +89,7 @@ function stripAllComments(string $phpSource): string {
 
 function stripInternalComments(string $phpSource): string {
   $lines = explode("\n", $phpSource);
-  $lines = preg_grep(';\w*//internal//;', $lines, PREG_GREP_INVERT);
+  $lines = preg_grep(';\w*//internal[ :/];i', $lines, PREG_GREP_INVERT);
   return implode("\n", $lines);
 }
 

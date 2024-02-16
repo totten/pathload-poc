@@ -1,5 +1,8 @@
 <?php
 
+// This is an approximate work-a-like for polyfill-template.php.
+// It is intended for use in debugging patches within `php-pathload.git`.
+
 namespace {
   if (!defined('PATHLOAD_VERSION')) {
     define('PATHLOAD_VERSION', require __DIR__ . '/version.php');
