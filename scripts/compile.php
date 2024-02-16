@@ -42,6 +42,10 @@ function evalTemplate(bool $minify): string {
 
   $template = stripInternalComments(read('polyfill-template.php'));
   $phpSources = [
+    'LICENSE' => preg_replace(';Copyright \(c\) [-\d]+ CiviCRM LLC;',
+      'Copyright (c) 2022-' . date('Y') . ' CiviCRM LLC',
+      trim(read('../LICENSE.txt'))
+    ),
     'PathLoadInterface' => read('PathLoadInterface.php'),
 
     // TODO: For the rest, maybe just glob it...

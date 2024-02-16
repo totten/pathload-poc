@@ -1,5 +1,8 @@
 <?php
 //INTERNAL: This template is used to construct the final polyfill. See also: `scripts/compile.php`
+/*
+//INCLUDE:LICENSE//
+*/
 namespace {
   if (isset($GLOBALS['_PathLoad'][PATHLOAD_VERSION])) {
     return $GLOBALS['_PathLoad'][PATHLOAD_VERSION];
