@@ -44,12 +44,14 @@ class Scanner {
   }
 
   /**
+   * Evaluate any rules that have a chance of finding $packageHint.
+   *
    * @param string $packageHint
    *   Give a hint about what package we're looking for.
    *   The scanner will try to target packages based on this hint.
    *   Ex: '*' or 'cloud-file-io'
    * @return \Generator
-   *   A list of packages. Thesemay not be the exact package you're looking for.
+   *   A list of packages. These may not be the exact package you're looking for.
    *   You should assimilate knowledge of all outputs because you may not get them again.
    */
   public function scan(string $packageHint): \Generator {
@@ -83,7 +85,7 @@ class Scanner {
     if (isset($searchRule['glob'])) {
       return $searchRule['glob'];
     }
-    elseif(isset($searchRule['file'])) {
+    elseif (isset($searchRule['file'])) {
       return md5(implode(' ', [$searchRule['file'], $searchRule['package'], $searchRule['version']]));
     }
     else {
