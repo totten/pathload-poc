@@ -32,7 +32,8 @@ phpunit9 --process-isolation
 
 > __TIP__: You can test an IDE like PhpStorm. If you need to frequently
 > iterate and/or set break-points, look at `currentPolyfill()` and decide
-> which option feels better.
+> which option feels better. However, in my experience, it's best to
+> only run one test-function at a time.
 
 ## Polyfill Versioning
 
