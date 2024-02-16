@@ -9,42 +9,30 @@ class PathLoad implements \PathLoadInterface {
   public $version;
 
   /**
-   * List of globs that we will scan (if we need to load a package).
-   *
-   * Search-rules are evaluated lazily. Once evaluated, the data is merged into $availablePackages.
-   * The rule is moved to $resolvedSearchRules.
-   *
-   * @var array
-   *   Array([package => string, glob => string])
+   * @var Scanner
    * @internal
    */
-  public $availableSearchRules = [];
-
-  /**
-   * List of globs that have been scanned already.
-   *
-   * @var array
-   *   Array(string $glob => [package => string, glob => string])
-   * @internal
-   */
-  public $resolvedSearchRules = [];
+  public $scanner;
 
   /**
    * List of best-known versions for each package.
    *
    * Packages are loaded lazily. Once loaded, the data is moved to $resolvedPackages.
    *
-   * @var array
-   *   Array(string $majorName => [name => string, version => string, file => string type => string])
+   * @var Package[]
+   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
    * @internal
    */
   public $availablePackages = [];
 
   /**
-   * List of package names that have already been resolved.
+   * List of packages that have already been resolved.
    *
-   * @var array
-   *   Array(string $majorName => [name => string, version => string, file => string type => string])
+   * @var Package[]
+   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
+   *   Note: If PathLoad version is superceded, then the resolvedPackages may be instances of
+   *   an old `Package` class. Be mindful of duck-type compatibility.
+   *   We don't strictly need to retain this data, but it feels it'd be handy for debugging.
    * @internal
    */
   public $resolvedPackages = [];
@@ -83,6 +71,7 @@ class PathLoad implements \PathLoadInterface {
 
     $new = new static();
     $new->version = $version;
+    $new->scanner = new Scanner();
 
     // The exact protocol for assimilating $old instances may need change.
     // This seems like a fair guess as long as old properties are forward-compatible.
@@ -96,9 +85,9 @@ class PathLoad implements \PathLoadInterface {
     }
     else {
       // TIP: You might use $old->version to decide what to use.
-      $new->availableSearchRules = $old->availableSearchRules;
-      $new->resolvedSearchRules = $old->resolvedSearchRules;
-      $new->availablePackages = $old->availablePackages;
+      foreach ($old->scanner->allRules as $rule) {
+        $new->scanner->addRule($rule);
+      }
       $new->resolvedPackages = $old->resolvedPackages;
       $new->availableNamespaces = $old->availableNamespaces;
       $new->psr4Classloader = $old->psr4Classloader;
@@ -109,30 +98,14 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * To load $package, you search files matching $glob.
-   *
-   * @param string $package
-   *   Ex: 'cloud-io@1'
-   *   Note: The special value '*' will be used to search for any package.
-   * @param string $glob
-   *   Ex: '/var/www/lib/*@*' or '/var/www/lib/cloud-io@1*.phar'
-   * @return $this
-   */
-  private function addSearchRule(string $package, string $glob): \PathLoadInterface {
-    if (!isset($this->resolvedSearchRules[$glob])) {
-      $this->availableSearchRules[] = ['package' => $package, 'glob' => $glob];
-    }
-    return $this;
-  }
-
-  /**
    * Append a directory (with many packages) to the search-path.
    *
    * @param string $baseDir
    *   The path to a base directory (e.g. `/var/www/myapp/lib`) which contains many packages (e.g. `foo@1.2.3.phar` or `bar@4.5.6/autoload.php`).
    */
   public function addSearchDir(string $baseDir): \PathLoadInterface {
-    return $this->addSearchRule('*', "$baseDir/*@*");
+    $this->scanner->addRule(['package' => '*', 'glob' => "$baseDir/*@*"]);
+    return $this;
   }
 
   /**
@@ -234,31 +207,31 @@ class PathLoad implements \PathLoadInterface {
   /**
    * Load the content of a package.
    *
-   * @param string $package
+   * @param string $majorName
    *   Ex: 'cloud-io@1'
    * @return $this
    */
-  public function loadPackage(string $package): PathLoad {
-    if (isset($this->resolvedPackages[$package])) {
+  public function loadPackage(string $majorName): PathLoad {
+    if (isset($this->resolvedPackages[$majorName])) {
       return $this;
     }
-    $packageInfo = $this->resolve($package);
-    switch ($packageInfo['type'] ?? NULL) {
+    $package = $this->resolve($majorName);
+    switch ($package->type ?? NULL) {
       case 'php':
-        doRequire($packageInfo['file']);
+        doRequire($package->file);
         return $this;
 
       case 'phar':
-        doRequire($packageInfo['file']);
-        $this->useMetadataFiles($packageInfo, 'phar://' . $packageInfo['file']);
+        doRequire($package->file);
+        $this->useMetadataFiles($package, 'phar://' . $package->file);
         return $this;
 
       case 'dir':
-        $this->useMetadataFiles($packageInfo, $packageInfo['file']);
+        $this->useMetadataFiles($package, $package->file);
         return $this;
 
       default:
-        error_log("Failed to load package \"$package\".");
+        error_log("Failed to load package \"$majorName\".");
         return $this;
     }
   }
@@ -267,23 +240,22 @@ class PathLoad implements \PathLoadInterface {
    * When loading a package, you may find metadata files
    * like "pathload.main.php" or "pathload.json". Load these.
    *
-   * @param array $packageInfo
-   *   Ex: ['name' => 'cloud-io', 'version' => '1.2.0', 'file' => 'cloud-io@1.2.0.phar']'
+   * @param Package $package
    * @param string $dir
    *   Ex: '/var/www/lib/cloud-io@1.2.0'
    *   Ex: 'phar:///var/www/lib/cloud-io@1.2.0.phar'
    */
-  protected function useMetadataFiles(array $packageInfo, string $dir): void {
+  protected function useMetadataFiles(Package $package, string $dir): void {
     $bootFile = "$dir/pathload.main.php";
     if (file_exists($bootFile)) {
       require $bootFile;
     }
+    // FIXME: make this an 'else{}'
 
     $pathloadJsonFile = "$dir/pathload.json";
     if (file_exists($pathloadJsonFile)) {
-      $pathloadJsonData = file_get_contents($pathloadJsonFile);
-      $pathLoadJson = json_decode($pathloadJsonData, TRUE);
-      $packageId = $packageInfo['name'] . '@' . $packageInfo['version'];
+      $pathLoadJson = json_decode(file_get_contents($pathloadJsonFile), TRUE);
+      $packageId = $package->name . '@' . $package->version;
       $this->activatePackage($packageId, $dir, $pathLoadJson);
     }
   }
@@ -323,22 +295,20 @@ class PathLoad implements \PathLoadInterface {
   /**
    * @param string $package
    *   Ex: 'cloud-io@1'
-   * @return array|null
+   * @return Package|null
    */
-  protected function resolve(string $package): ?array {
-    // if (strpos($package, '@') === FALSE) {}
+  protected function resolve(string $package): ?Package {
+    // if (strpos($package, '@') === FALSE) { error... }
 
-    [$majorName] = static::parsePackage($package);
+    [$majorName, $name] = Package::parseExpr($package);
     if (isset($this->resolvedPackages[$majorName])) {
       return $this->resolvedPackages[$majorName];
     }
 
-    foreach (array_keys($this->availableSearchRules) as $key) {
-      $searchRule = $this->availableSearchRules[$key];
-      if ($searchRule['package'] === '*' || $searchRule['package'] === $majorName) {
-        $this->resolvedSearchRules[$searchRule['glob']] = $searchRule;
-        unset($this->availableSearchRules[$key]);
-        $this->scan($searchRule['glob']);
+    foreach ($this->scanner->scan($name) as $packageRec) {
+      /** @var Package $packageRec */
+      if (!isset($this->availablePackages[$packageRec->majorName]) || version_compare($packageRec->version, $this->availablePackages[$packageRec->majorName]->version, '>')) {
+        $this->availablePackages[$packageRec->majorName] = $packageRec;
       }
     }
 
@@ -350,61 +320,6 @@ class PathLoad implements \PathLoadInterface {
 
     error_log("Failed to resolve \"$package\"");
     return NULL;
-  }
-
-  /**
-   * Search a set of files. Examine the names to determine to available packages/versions.
-   *
-   * @param string $glob
-   *   Ex: '/var/www/lib/*'
-   */
-  protected function scan(string $glob): void {
-    foreach ((array) glob($glob) as $file) {
-      if (substr($file, -4) === '.php') {
-        [$majorName, $name, $version] = static::parsePackage(substr(basename($file), 0, -4));
-        $type = 'php';
-      }
-      elseif (substr($file, '-5') === '.phar') {
-        [$majorName, $name, $version] = static::parsePackage(substr(basename($file), 0, -5));
-        $type = 'phar';
-      }
-      elseif (is_dir($file)) {
-        [$majorName, $name, $version] = static::parsePackage(basename($file));
-        $type = 'dir';
-      }
-      else {
-        // Not for us.
-        continue;
-      }
-
-      if (!isset($this->availablePackages[$majorName]) || version_compare($this->availablePackages[$majorName]['version'], $version, '<')) {
-        $this->availablePackages[$majorName] = [
-          'name' => $name,
-          'version' => $version,
-          'file' => $file,
-          'type' => $type,
-        ];
-      }
-    }
-  }
-
-  /**
-   * Split a package identifier into its parts.
-   *
-   * @param string $package
-   *   Ex: ''foobar@1.2.3''
-   * @return array
-   *   Tuple: [$majorName, $name, $version]
-   *   Ex: 'foobar@1', 'foobar', '1.2.3'
-   */
-  protected static function parsePackage(string $package): array {
-    if (strpos($package, '@') === FALSE) {
-      throw new \RuntimeException("Malformed package name: $package");
-    }
-    [$prefix, $suffix] = explode('@', $package, 2);
-    $prefix = str_replace('/', '~', $prefix);
-    [$major] = explode('.', $suffix, 2);
-    return ["$prefix@$major", $prefix, $suffix];
   }
 
 }

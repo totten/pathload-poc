@@ -14,6 +14,8 @@ namespace PATHLOAD_NS {
   if (!class_exists('PathLoad')) {
     //INCLUDE:funcs//
     //INCLUDE:Versions//
+    //INCLUDE:Package//
+    //INCLUDE:Scanner//
     //INCLUDE:PathLoad//
     //INCLUDE:Psr4Autoloader//
   }

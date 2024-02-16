@@ -10,10 +10,9 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
 
   protected function tearDown(): void {
     if (isset($GLOBALS['_PathLoad']['top'])) {
-      $this->assertClassloaderHasNoDuplicates($GLOBALS['_PathLoad']['top']->psr4Classloader,);
+      $this->assertClassloaderHasNoDuplicates($GLOBALS['_PathLoad']['top']->psr4Classloader);
     }
   }
-
 
   public function expectOutputLines(array $lines) {
     $this->expectOutputString(implode("\n", $lines) . "\n");
@@ -21,15 +20,13 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
 
   public function assertLoaded(array $majorNamesFiles): void {
     foreach ($majorNamesFiles as $majorName => $file) {
-      $actual = pathload()->resolvedPackages[$majorName]['file'] ?? NULL;
+      $actual = pathload()->resolvedPackages[$majorName]->file ?? NULL;
       $this->assertEquals($actual, $file);
     }
   }
 
   /**
    * @param $classloader
-   * @param array $counts
-   *
    * @return void
    */
   protected function assertClassloaderHasNoDuplicates($classloader): void {

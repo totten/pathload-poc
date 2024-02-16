@@ -23,7 +23,7 @@
  * This locates the relevant files and loads them.
  * If you use namespace-autoloading, then this shouldn't be necessary.
  *
- * @method PathLoadInterface loadPackage(string $package)
+ * @method PathLoadInterface loadPackage(string $majorName)
  *
  * ==== PACKAGE PROVIDER APIS ====
  *

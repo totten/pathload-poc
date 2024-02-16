@@ -47,8 +47,8 @@ function evalTemplate(bool $minify): string {
     // TODO: For the rest, maybe just glob it...
     'funcs' => $cleanup(read('Vn/funcs.php')),
     'PathLoad' => $cleanup(read('Vn/PathLoad.php')),
-    // 'Scanner' => $cleanup(read('Vn/Scanner.php')),
-    // 'Package' => $cleanup(read('Vn/Package.php')),
+    'Scanner' => $cleanup(read('Vn/Scanner.php')),
+    'Package' => $cleanup(read('Vn/Package.php')),
     'Versions' => $cleanup(read('Vn/Versions.php')),
     'Psr4Autoloader' => $cleanup(read('Vn/Psr4Autoloader.php')),
   ];
