@@ -91,7 +91,7 @@ this library in a few formats:
 
 A single source may be sufficient for a small library. As you get larger content or more classes, it becomes advantageous to use a
 PHAR or directory. These should be organized per PSR-0 or PSR-4. To describe the structure more precisely,
-include the file `pathload.main.php` or `pathload.json`. These are examples are equivalent:
+include the file `pathload.main.php` or `pathload.json`. These examples are equivalent:
 
 ```php
 // pathload.main.php
@@ -114,7 +114,7 @@ pathload()->activatePackage('my-library@1', __DIR__, [
 }
 ```
 
-There are several more examples in [example/lib/](./example). Each example starts
+There are several more examples in [example/lib/](./example/lib). Each example starts
 out as a folder and is [compiled](./example/build.sh) to equivalent PHAR+PHP options. These
 examples are used extensively in the PathLoad test-suite to ensure that they are well formed.
 
