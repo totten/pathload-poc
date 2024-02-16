@@ -86,18 +86,18 @@ Let's consider an example library, `cloud-file-io@1.2.3`.  When packaging for di
 this library in a few formats:
 
 * `cloud-file-io@1.2.3.php`: __PHP source file__: Loading this file should provide all the necessary classes.
-* `cloud-file-io@1.2.3.phar`: __PHP archive file: It should setup a classoader using `pathload.main.php` or `pathload.json`.
-* `cloud-file-io@1.2.3/`: __Local directory: It should setup a classloader using `pathload.main.php` or `pathload.json`.
+* `cloud-file-io@1.2.3.phar`: __PHP archive file__: It should setup a classoader using `pathload.main.php` or `pathload.json`.
+* `cloud-file-io@1.2.3/`: __Local directory__: It should setup a classloader using `pathload.main.php` or `pathload.json`.
 
-The internal structure of a PHAR or directory should abide PSR-0 or PSR-4. The file `pathload.main.php` or
-`pathload.json` can be used to describe the structure of the library. These are equivalent:
+The internal structure of a PHAR or directory should abide PSR-0 or PSR-4. To describe the structure more precisely,
+create `pathload.main.php` or `pathload.json`. These are equivalent:
 
 ```php
 // pathload.main.php
 pathload()->activatePackage('my-library@1', __DIR__, [
   'autoload' => [
     'psr-4' => [
-      'My\\Php\\Namespace\\' => 'src/',
+      'My\\Php\\Namespace\\' => ['src/'],
     ],
   ]
 ]);
