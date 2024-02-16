@@ -127,7 +127,6 @@ class PathLoad implements \PathLoadInterface {
     return $this;
   }
 
-
   /**
    * Declare that a $package includes some list of namespaces.
    *
@@ -301,7 +300,7 @@ class PathLoad implements \PathLoadInterface {
    * @return Package|null
    */
   protected function resolve(string $package): ?Package {
-    // if (strpos($package, '@') === FALSE) { error... }
+    //internal// if (strpos($package, '@') === FALSE) { error... }
 
     [$majorName, $name] = Package::parseExpr($package);
     if (isset($this->resolvedPackages[$majorName])) {
@@ -321,7 +320,7 @@ class PathLoad implements \PathLoadInterface {
       return $this->resolvedPackages[$majorName];
     }
 
-    error_log("Failed to resolve \"$package\"");
+    error_log("PathLoad: Failed to resolve \"$package\"");
     return NULL;
   }
 
