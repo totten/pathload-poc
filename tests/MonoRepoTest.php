@@ -2,6 +2,12 @@
 namespace PathLoad\Test;
 
 /**
+ * Load the "monorepo" packages. This is one folder (eg "monorepo-1.0.0" or "monorepo-1.4.0")
+ * where all the subfolders are separate packages... with *the same version*.
+ *
+ * This differs from the canonical file-layout. Each example includes a `monorepo.php` to
+ * describe the layout.
+ *
  * TIP: Disable this annotation when debugging PHPStorm. But you can only run one test.
  * FIXME: runTestsInSeparateProcesses
  */
@@ -28,7 +34,7 @@ class MonoRepoTest extends PathLoadTestCase {
     $this->assertLoaded([
       'mono-file@1' => srcPath('example/monorepo-1.0.0/file'),
       'mono-array@1' => srcPath('example/monorepo-1.0.0/array'),
-      ]);
+    ]);
   }
 
   public function testAutoLoader_v140() {

@@ -1,6 +1,11 @@
 <?php
 namespace PathLoad\Test;
 
+/**
+ * Load the "extralib" package. The interesting thing here is that "extralib"
+ * has a dependency on "corelib", so loading it may cause "corelib" to load
+ * transitively.
+ */
 class ExtraLibTest extends PathLoadTestCase {
 
   public function testAddSearchDir_Phar_v123() {

@@ -2,6 +2,11 @@
 namespace PathLoad\Test;
 
 /**
+ * Load the "retrolib" package. This package includes a set of packages defined via PSR-0.
+ * This means both "_" and "\" support.
+ *
+ * The different versions of the package take advantage of slightly different file-hierarchies.
+ *
  * TIP: Disable this annotaiton when debugging PHPStorm. But you can only run one test.
  * FIXME: runTestsInSeparateProcesses
  */
