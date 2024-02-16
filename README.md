@@ -85,7 +85,7 @@ the upstream modules). Here's how:
 Let's consider an example library, `cloud-file-io@1.2.3`.  When packaging for distribution, you could provide
 this library in a few formats:
 
-* __PHP Source File__ (`cloud-file-io@1.2.3.php`): This is just a plain old PHP file some `function`s or `class`es.
+* __PHP Source File__ (`cloud-file-io@1.2.3.php`): This is just a plain old PHP file with some `function`s or `class`es.
 * __PHP Archive File__ (`cloud-file-io@1.2.3.phar`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
 * __Local Directory__ (`cloud-file-io@1.2.3/`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
 
