@@ -120,4 +120,5 @@ examples are used extensively in the PathLoad test-suite to ensure that they are
 
 ## More information
 
-The [discuss.md](doc/discuss.md) has additional notes and thoughts. It should probably be organized more...
+* [develop.md](doc/develop.md) talks more about doing development of Pathload codebase
+* [discuss.md](doc/discuss.md) has additional notes and thoughts. It should probably be organized more...

@@ -21,7 +21,12 @@ function srcPath(?string $subPath = NULL): string {
 }
 
 function currentPolyfill() {
+  // Use the compiled version. This is more representative of release.
+  // However, you must periodically call `scripts/compile.php` to regenerate it.
   return srcPath('dist/pathload-latest.php');
+
+  // Use the main sources (directly). This is slightly less representative,
+  // but it sidesteps compilation and simplifies debugging.
   // return srcPath('src/polyfill-dev.php');
 }
 
