@@ -250,17 +250,16 @@ class PathLoad implements \PathLoadInterface {
    *   Ex: 'phar:///var/www/lib/cloud-io@1.2.0.phar'
    */
   protected function useMetadataFiles(Package $package, string $dir): void {
-    $bootFile = "$dir/pathload.main.php";
-    if (file_exists($bootFile)) {
-      require $bootFile;
-    }
-    // FIXME: make this an 'else{}'
+    $phpFile = "$dir/pathload.main.php";
+    $jsonFile = "$dir/pathload.json";
 
-    $pathloadJsonFile = "$dir/pathload.json";
-    if (file_exists($pathloadJsonFile)) {
-      $pathLoadJson = json_decode(file_get_contents($pathloadJsonFile), TRUE);
+    if (file_exists($phpFile)) {
+      require $phpFile;
+    }
+    elseif (file_exists($jsonFile)) {
+      $jsonData = json_decode(file_get_contents($jsonFile), TRUE);
       $packageId = $package->name . '@' . $package->version;
-      $this->activatePackage($packageId, $dir, $pathLoadJson);
+      $this->activatePackage($packageId, $dir, $jsonData);
     }
   }
 
