@@ -18,12 +18,12 @@ class Scanner {
    */
   public $newRules = [];
 
-  /**
-   * @var array
-   *   Array(string $id => [package => string, glob => string])
-   * @internal
-   */
-  public $oldRules = [];
+  //internal// /**
+  //internal// * @var array
+  //internal// *   Array(string $id => [package => string, glob => string])
+  //internal// * @internal
+  //internal// */
+  //internal//public $oldRules = [];
 
   /**
    * @param array $rule
@@ -32,9 +32,7 @@ class Scanner {
    * @return void
    */
   public function addRule(array $rule): void {
-    // NOTE: Previous iteration guarded against re-adding old rules. When this iteration
-    // stabilizes, we should reasses. Maybe we still need the guard. Maybe we drop it... and
-    // then drop $oldRules entirely. Need to bear in mind the "next-extension-install" use-case.
+    //internal// In prior iterations, this deduped with a guard on `$this->oldRules`. Don't see the point now.
     $id = static::id($rule);
     $this->allRules[$id] = $rule;
     $this->newRules[$id] = $rule;
@@ -59,7 +57,7 @@ class Scanner {
     foreach (array_keys($this->newRules) as $id) {
       $searchRule = $this->newRules[$id];
       if ($searchRule['package'] === '*' || $searchRule['package'] === $packageHint) {
-        $this->oldRules[$id] = $searchRule;
+        //internal// $this->oldRules[$id] = $searchRule;
         unset($this->newRules[$id]);
         if (isset($searchRule['glob'])) {
           foreach ((array) glob($searchRule['glob']) as $file) {
