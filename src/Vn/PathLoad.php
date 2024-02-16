@@ -109,6 +109,26 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
+   * Append one specific item to the search list.
+   *
+   * @param string $name
+   *   Ex: 'cloud-file-io'
+   * @param string $version
+   *   Ex: '1.2.3'
+   * @param string $file
+   *   Full path to the file or folder.
+   * @param string|null $type
+   *   One of: 'php', 'phar', or 'dir'. NULL will auto-detect.
+   *
+   * @return \PathLoadInterface
+   */
+  public function addSearchItem(string $name, string $version, string $file, ?string $type = NULL): \PathLoadInterface {
+    $this->scanner->addRule(['package' => $name, 'version' => $version, 'file' => $file, 'type' => $type]);
+    return $this;
+  }
+
+
+  /**
    * Declare that a $package includes some list of namespaces.
    *
    * If someone requests a class in $namespace, then we load $package.

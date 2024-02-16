@@ -23,25 +23,29 @@ class Package {
     return ["$prefix@$major", $prefix, $suffix];
   }
 
+  public static function parseFileType(string $file): array {
+    if (substr($file, -4) === '.php') {
+      return ['php', substr(basename($file), 0, -4)];
+    }
+    elseif (substr($file, '-5') === '.phar') {
+      return ['phar', substr(basename($file), 0, -5)];
+    }
+    elseif (is_dir($file)) {
+      return ['dir', basename($file)];
+    }
+    else {
+      return [NULL, NULL];
+    }
+  }
+
   /**
    * @param string $file
    *  Ex: '/var/www/app-1/lib/foobar@.1.2.3.phar'
    * @return \PathLoad\Vn\Package|null
    */
   public static function create(string $file): ?Package {
-    if (substr($file, -4) === '.php') {
-      $base = substr(basename($file), 0, -4);
-      $type = 'php';
-    }
-    elseif (substr($file, '-5') === '.phar') {
-      $base = substr(basename($file), 0, -5);
-      $type = 'phar';
-    }
-    elseif (is_dir($file)) {
-      $base = basename($file);
-      $type = 'dir';
-    }
-    else {
+    [$type, $base] = self::parseFileType($file);
+    if ($type === NULL) {
       return NULL;
     }
 

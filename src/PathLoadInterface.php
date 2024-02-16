@@ -12,6 +12,11 @@
  *
  * @method PathLoadInterface addSearchDir(string $baseDir)
  *
+ * (Pathload v0) Enable autoloading of a specific `*.phar`, `*.php`, or folder.
+ * Useful for non-standard file-layout.
+ *
+ * @method PathLoadInterface addSearchItem(string $name, string $version, string $file, ?string $type = NULL)
+ *
  * (PathLoad v0) Declare knowledge about what packages are available. These provide
  * hints for autoloading.
  *

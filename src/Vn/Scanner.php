@@ -66,6 +66,15 @@ class Scanner {
             }
           }
         }
+        if (isset($searchRule['file'])) {
+          $package = new Package();
+          $package->file = $searchRule['file'];
+          $package->name = $searchRule['package'];
+          $package->majorName = $searchRule['package'] . '@' . explode('.', $searchRule['version'])[0];
+          $package->version = $searchRule['version'];
+          $package->type = $searchRule['type'] ?: Package::parseFileType($searchRule['file'])[0];
+          yield $package;
+        }
       }
     }
   }
@@ -73,6 +82,9 @@ class Scanner {
   protected static function id(array $searchRule): string {
     if (isset($searchRule['glob'])) {
       return $searchRule['glob'];
+    }
+    elseif(isset($searchRule['file'])) {
+      return md5(implode(' ', [$searchRule['file'], $searchRule['package'], $searchRule['version']]));
     }
     else {
       throw new \RuntimeException("Cannot identify rule: " . json_encode($searchRule));
