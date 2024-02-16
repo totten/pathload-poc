@@ -43,10 +43,14 @@ function evalTemplate(bool $minify): string {
   $template = read('template.php');
   $phpSources = [
     'PathLoadInterface' => read('PathLoadInterface.php'),
-    'funcs' => $cleanup(read('funcs.php')),
-    'PathLoad' => $cleanup(read('PathLoad.php')),
-    'PathLoadVersions' => $cleanup(read('PathLoadVersions.php')),
-    'Psr4Autoloader' => $cleanup(read('Psr4Autoloader.php')),
+
+    // TODO: For the rest, maybe just glob it...
+    'funcs' => $cleanup(read('Vn/funcs.php')),
+    'PathLoad' => $cleanup(read('Vn/PathLoad.php')),
+    // 'Scanner' => $cleanup(read('Vn/Scanner.php')),
+    // 'Package' => $cleanup(read('Vn/Package.php')),
+    'Versions' => $cleanup(read('Vn/Versions.php')),
+    'Psr4Autoloader' => $cleanup(read('Vn/Psr4Autoloader.php')),
   ];
 
   $includeCode = function ($m) use ($phpSources) {

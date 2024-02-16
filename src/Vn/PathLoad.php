@@ -105,7 +105,7 @@ class PathLoad implements \PathLoadInterface {
     }
 
     $new->register();
-    return new PathLoadVersions($new);
+    return new Versions($new);
   }
 
   /**

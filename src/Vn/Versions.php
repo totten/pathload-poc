@@ -11,7 +11,7 @@ namespace PathLoad\Vn;
  * $x['top'] ==> Whatever version is latest/current
  * $x->top ==> Whatever version is latest/current
  */
-class PathLoadVersions implements \ArrayAccess {
+class Versions implements \ArrayAccess {
 
   public $top;
 
