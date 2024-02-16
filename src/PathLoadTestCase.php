@@ -36,7 +36,7 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
 
   public function assertLoaded(array $majorNamesFiles): void {
     foreach ($majorNamesFiles as $majorName => $file) {
-      $actual = pathload()->resolvedPackages[$majorName]->file ?? NULL;
+      $actual = pathload()->loadedPackages[$majorName]->file ?? NULL;
       $this->assertEquals($actual, $file);
     }
   }

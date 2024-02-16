@@ -17,7 +17,7 @@ class PathLoad implements \PathLoadInterface {
   /**
    * List of best-known versions for each package.
    *
-   * Packages are loaded lazily. Once loaded, the data is moved to $resolvedPackages.
+   * Packages are loaded lazily. Once loaded, the data is moved to $loadedPackages.
    *
    * @var Package[]
    *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
@@ -30,12 +30,12 @@ class PathLoad implements \PathLoadInterface {
    *
    * @var Package[]
    *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
-   *   Note: If PathLoad version is superceded, then the resolvedPackages may be instances of
+   *   Note: If PathLoad version is super-ceded, then the loadedPackages may be instances of
    *   an old `Package` class. Be mindful of duck-type compatibility.
    *   We don't strictly need to retain this data, but it feels it'd be handy for debugging.
    * @internal
    */
-  public $resolvedPackages = [];
+  public $loadedPackages = [];
 
   /**
    * List of hints for class-loading. If someone tries to use a matching class, then
@@ -88,7 +88,7 @@ class PathLoad implements \PathLoadInterface {
       foreach ($old->scanner->allRules as $rule) {
         $new->scanner->addRule($rule);
       }
-      $new->resolvedPackages = $old->resolvedPackages;
+      $new->loadedPackages = $old->loadedPackages;
       $new->availableNamespaces = $old->availableNamespaces;
       $new->classLoader = $old->classLoader;
     }
@@ -186,7 +186,7 @@ class PathLoad implements \PathLoadInterface {
    * @param string[] $classParts
    *   Ex: ['Symfony', 'Components', 'Filesystem', 'Filesystem']
    */
-  protected function loadPackagesByNamespace(string $delim, array $classParts): void {
+  private function loadPackagesByNamespace(string $delim, array $classParts): void {
     array_pop($classParts);
     do {
       $foundPackages = FALSE;
@@ -194,11 +194,16 @@ class PathLoad implements \PathLoadInterface {
       foreach ($classParts as $nsPart) {
         $namespace .= $nsPart . $delim;
         if (isset($this->availableNamespaces[$namespace])) {
-          $foundPackages = TRUE;
           $packages = $this->availableNamespaces[$namespace];
-          unset($this->availableNamespaces[$namespace]); /* Don't revisit these $packages in the future. */
           foreach ($packages as $package) {
-            $this->loadPackage($package);
+            unset($this->availableNamespaces[$namespace][$package]);
+            if ($this->loadPackage($package)) {
+              $foundPackages = TRUE;
+            }
+            else {
+              trigger_error("PathLoad: Failed to locate package \"$package\" required for namespace \"$namespace\"", E_USER_WARNING);
+              $this->availableNamespaces[$namespace][$package] = $package; /* Maybe some other time */
+            }
           }
         }
       }
@@ -212,30 +217,49 @@ class PathLoad implements \PathLoadInterface {
    *
    * @param string $majorName
    *   Ex: 'cloud-io@1'
-   * @return $this
+   * @return string|NULL
+   *   The version# of the loaded package. Otherwise, NULL
    */
-  public function loadPackage(string $majorName): PathLoad {
-    if (isset($this->resolvedPackages[$majorName])) {
-      return $this;
+  public function loadPackage(string $majorName): ?string {
+    if (isset($this->loadedPackages[$majorName])) {
+      return $this->loadedPackages[$majorName]->version;
     }
-    $package = $this->resolve($majorName);
+
+    $this->scanAvailablePackages($majorName);
+    if (!isset($this->availablePackages[$majorName])) {
+      return NULL;
+    }
+
+    $package = $this->loadedPackages[$majorName] = $this->availablePackages[$majorName];
+    unset($this->availablePackages[$majorName]);
+
     switch ($package->type ?? NULL) {
       case 'php':
         doRequire($package->file);
-        return $this;
+        return $package->version;
 
       case 'phar':
         doRequire($package->file);
         $this->useMetadataFiles($package, 'phar://' . $package->file);
-        return $this;
+        return $package->version;
 
       case 'dir':
         $this->useMetadataFiles($package, $package->file);
-        return $this;
+        return $package->version;
 
       default:
-        error_log("Failed to load package \"$majorName\".");
-        return $this;
+        \error_log("PathLoad: Package (\"$majorName\") appears malformed.");
+        return NULL;
+    }
+  }
+
+  private function scanAvailablePackages(string $majorName): void {
+    [, $name] = Package::parseExpr($majorName);
+    foreach ($this->scanner->scan($name) as $packageRec) {
+      /** @var Package $packageRec */
+      if (!isset($this->availablePackages[$packageRec->majorName]) || \version_compare($packageRec->version, $this->availablePackages[$packageRec->majorName]->version, '>')) {
+        $this->availablePackages[$packageRec->majorName] = $packageRec;
+      }
     }
   }
 
@@ -248,7 +272,7 @@ class PathLoad implements \PathLoadInterface {
    *   Ex: '/var/www/lib/cloud-io@1.2.0'
    *   Ex: 'phar:///var/www/lib/cloud-io@1.2.0.phar'
    */
-  protected function useMetadataFiles(Package $package, string $dir): void {
+  private function useMetadataFiles(Package $package, string $dir): void {
     $phpFile = "$dir/pathload.main.php";
     $jsonFile = "$dir/pathload.json";
 
@@ -292,36 +316,6 @@ class PathLoad implements \PathLoadInterface {
       }
     }
     return $this;
-  }
-
-  /**
-   * @param string $package
-   *   Ex: 'cloud-io@1'
-   * @return Package|null
-   */
-  protected function resolve(string $package): ?Package {
-    //internal// if (strpos($package, '@') === FALSE) { error... }
-
-    [$majorName, $name] = Package::parseExpr($package);
-    if (isset($this->resolvedPackages[$majorName])) {
-      return $this->resolvedPackages[$majorName];
-    }
-
-    foreach ($this->scanner->scan($name) as $packageRec) {
-      /** @var Package $packageRec */
-      if (!isset($this->availablePackages[$packageRec->majorName]) || version_compare($packageRec->version, $this->availablePackages[$packageRec->majorName]->version, '>')) {
-        $this->availablePackages[$packageRec->majorName] = $packageRec;
-      }
-    }
-
-    if (isset($this->availablePackages[$majorName])) {
-      $this->resolvedPackages[$majorName] = $this->availablePackages[$majorName];
-      unset($this->availablePackages[$majorName]);
-      return $this->resolvedPackages[$majorName];
-    }
-
-    error_log("PathLoad: Failed to resolve \"$package\"");
-    return NULL;
   }
 
 }

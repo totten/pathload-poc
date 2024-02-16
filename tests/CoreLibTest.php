@@ -162,4 +162,52 @@ class CoreLibTest extends PathLoadTestCase {
     $this->assertLoaded(['corelib@1' => "$libDirB/corelib@1.6.0.php", 'extralib@1' => NULL]);
   }
 
+  public function testEmptyEmptyGo_A() {
+    $libDirA = buildLibDir(__FUNCTION__ . '/a', []);
+    $libDirB = buildLibDir(__FUNCTION__ . '/b', []);
+    $libDirC = buildLibDir(__FUNCTION__ . '/c', [
+      'corelib@1.2.3' => 'phar',
+    ]);
+
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
+
+    pathload()->addSearchDir($libDirA);
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(FALSE, $exists);
+
+    pathload()->addSearchDir($libDirB);
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(FALSE, $exists);
+
+    pathload()->addSearchDir($libDirC);
+    pathload()->addPackage('corelib@1', 'Example\\');
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(TRUE, $exists);
+  }
+
+  public function testEmptyEmptyGo_B() {
+    $libDirA = buildLibDir(__FUNCTION__ . '/a', []);
+    $libDirB = buildLibDir(__FUNCTION__ . '/b', []);
+    $libDirC = buildLibDir(__FUNCTION__ . '/c', [
+      'corelib@1.2.3' => 'phar',
+    ]);
+
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
+    pathload()->addPackage('corelib@1', 'Example\\');
+
+    $this->expectWarnings[] = "PathLoad: Failed to locate package \"corelib@1\" required for namespace \"Example\\\"";
+    pathload()->addSearchDir($libDirA);
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(FALSE, $exists);
+
+    $this->expectWarnings[] = "PathLoad: Failed to locate package \"corelib@1\" required for namespace \"Example\\\"";
+    pathload()->addSearchDir($libDirB);
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(FALSE, $exists);
+
+    pathload()->addSearchDir($libDirC);
+    $exists = class_exists('\Example\CoreLib');
+    $this->assertEquals(TRUE, $exists);
+  }
+
 }
