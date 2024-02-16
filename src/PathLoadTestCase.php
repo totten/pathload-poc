@@ -10,7 +10,9 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
 
   protected function tearDown(): void {
     if (isset($GLOBALS['_PathLoad']['top'])) {
-      $this->assertClassloaderHasNoDuplicates($GLOBALS['_PathLoad']['top']->psr4Classloader);
+      /** @var \PathLoad\Vn\PathLoad $top */
+      $top = $GLOBALS['_PathLoad']['top'];
+      $this->assertClassloaderHasNoDuplicates($top->classLoader);
     }
   }
 

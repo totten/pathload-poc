@@ -51,10 +51,10 @@ class PathLoad implements \PathLoadInterface {
   public $availableNamespaces;
 
   /**
-   * @var Psr4Autoloader
+   * @var ClassLoader
    * @internal
    */
-  public $psr4Classloader;
+  public $classLoader;
 
   /**
    * @param int $version
@@ -81,7 +81,7 @@ class PathLoad implements \PathLoadInterface {
       foreach ($baseDirs as $baseDir) {
         $new->addSearchDir($baseDir);
       }
-      $new->psr4Classloader = new Psr4Autoloader();
+      $new->classLoader = new ClassLoader();
     }
     else {
       // TIP: You might use $old->version to decide what to use.
@@ -90,7 +90,7 @@ class PathLoad implements \PathLoadInterface {
       }
       $new->resolvedPackages = $old->resolvedPackages;
       $new->availableNamespaces = $old->availableNamespaces;
-      $new->psr4Classloader = $old->psr4Classloader;
+      $new->classLoader = $old->classLoader;
     }
 
     $new->register();
@@ -174,7 +174,7 @@ class PathLoad implements \PathLoadInterface {
       $this->loadPackagesByNamespace('_', explode('_', $class));
     }
 
-    return $this->psr4Classloader->loadClass($class);
+    return $this->classLoader->loadClass($class);
   }
 
   /**
@@ -279,7 +279,7 @@ class PathLoad implements \PathLoadInterface {
       if ($dir === NULL) {
         throw new \RuntimeException("Cannot activate package $name. The 'autoload' property requires a base-directory.");
       }
-      $this->psr4Classloader->addAutoloadJson($dir, $config['autoload']);
+      $this->classLoader->addAutoloadJson($dir, $config['autoload']);
       foreach ($config['require-namespace'] ?? [] as $nsRule) {
         foreach ((array) $nsRule['package'] as $package) {
           foreach ((array) $nsRule['prefix'] as $prefix) {

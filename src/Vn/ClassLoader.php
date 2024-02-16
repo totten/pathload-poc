@@ -1,7 +1,7 @@
 <?php
 namespace PathLoad\Vn;
 
-class Psr4Autoloader {
+class ClassLoader {
 
   /**
    * @var array

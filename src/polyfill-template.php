@@ -16,8 +16,8 @@ namespace PATHLOAD_NS {
     //INCLUDE:Versions//
     //INCLUDE:Package//
     //INCLUDE:Scanner//
+    //INCLUDE:ClassLoader//
     //INCLUDE:PathLoad//
-    //INCLUDE:Psr4Autoloader//
   }
 }
 
