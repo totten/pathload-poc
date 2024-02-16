@@ -12,7 +12,7 @@ define('PATHLOAD_VERSION', getenv('PATHLOAD_VERSION') ?: 0);
  * Ex: prjdir('example/dist')
  * Ex: prjdir('example', 'dist')
  *
- * @param ...$parts
+ * @param array $parts
  * @return string
  */
 function prjdir(...$parts): string {
@@ -38,7 +38,7 @@ function main() {
 }
 
 function evalTemplate(bool $minify): string {
-  $cleanup = ($minify ? '\PathLoad\Build\stripComments' : '\PathLoad\Build\identity');
+  $cleanup = ($minify ? '\PathLoad\Build\stripAllComments' : '\PathLoad\Build\stripInternalComments');
 
   $template = read('template.php');
   $phpSources = [
@@ -64,15 +64,11 @@ function evalTemplate(bool $minify): string {
   return trimWhitespace($result);
 }
 
-function identity($x) {
-  return $x;
-}
-
 function read($file): string {
   return file_get_contents(prjdir('src', $file));
 }
 
-function stripComments(string $phpSource): string {
+function stripAllComments(string $phpSource): string {
   $tokens = token_get_all($phpSource);
   $minifiedCode = '';
 
@@ -89,6 +85,12 @@ function stripComments(string $phpSource): string {
   }
 
   return $minifiedCode;
+}
+
+function stripInternalComments(string $phpSource): string {
+  $lines = explode("\n", $phpSource);
+  $lines = preg_grep(';\w*//internal//;', $lines, PREG_GREP_INVERT);
+  return implode("\n", $lines);
 }
 
 function trimWhitespace(string $phpSource): string {
