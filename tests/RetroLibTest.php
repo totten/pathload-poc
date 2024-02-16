@@ -59,4 +59,22 @@ class RetroLibTest extends PathLoadTestCase {
     $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.0.0"]);
   }
 
+  public function testAutoload_Dir_v110_Slash() {
+    $libDir = $this->setUpRetroLib('1.1.0', 'dir');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroSlash\Example\Greeter v1.1.0',
+    ]);
+    \RetroSlash\Example\Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.1.0"]);
+  }
+
+  public function testAutoload_Dir_v110_Score() {
+    $libDir = $this->setUpRetroLib('1.1.0', 'dir');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroScore_Example_Greeter v1.1.0',
+    ]);
+    \RetroScore_Example_Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.1.0"]);
+  }
+
 }

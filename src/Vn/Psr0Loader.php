@@ -16,6 +16,7 @@ class Psr0Loader {
    *   Ex: ['Foo_' => ['src/']] or ['Foo_' => ['Foo_']]
    */
   public function addAll(string $dir, array $config) {
+    $dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     foreach ($config as $prefix => $relPaths) {
       $bucket = $prefix[0];
       foreach ((array) $relPaths as $relPath) {
