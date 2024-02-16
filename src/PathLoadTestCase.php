@@ -22,9 +22,7 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
     restore_error_handler();
 
     if (isset($GLOBALS['_PathLoad']['top'])) {
-      /** @var \PathLoad\Vn\PathLoad $top */
-      $top = $GLOBALS['_PathLoad']['top'];
-      $this->assertClassloaderHasNoDuplicates($top->classLoader);
+      $this->assertClassloaderHasNoDuplicates($GLOBALS['_PathLoad']['top']);
     }
 
     $this->assertEquals($this->expectWarnings, $this->actualWarnings, "All warnings should be expected");
@@ -42,17 +40,26 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
   }
 
   /**
-   * @param $classloader
+   * @param \PathLoad\Vn\PathLoad $pathLoad
    * @return void
    */
-  protected function assertClassloaderHasNoDuplicates($classloader): void {
+  protected function assertClassloaderHasNoDuplicates($pathLoad): void {
     $counts = [];
-    foreach ($classloader->prefixes as $ns => $paths) {
+    foreach ($pathLoad->psr4->prefixes as $ns => $paths) {
       foreach ($paths as $path) {
-        $sig = "$ns => $path";
+        $sig = "psr4: $ns => $path";
         $counts[$sig] = 1 + ($counts[$sig] ?? 0);
       }
     }
+    foreach ($pathLoad->psr0->paths as $bucket => $prefixPaths) {
+      foreach ($prefixPaths as $ns => $paths) {
+        foreach ($paths as $path) {
+          $sig = "psr0: $ns => $path";
+          $counts[$sig] = 1 + ($counts[$sig] ?? 0);
+        }
+      }
+    }
+
     $extras = [];
     foreach ($counts as $sig => $count) {
       if ($count > 1) {

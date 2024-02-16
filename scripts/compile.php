@@ -50,7 +50,8 @@ function evalTemplate(bool $minify): string {
     'Scanner' => $cleanup(read('Vn/Scanner.php')),
     'Package' => $cleanup(read('Vn/Package.php')),
     'Versions' => $cleanup(read('Vn/Versions.php')),
-    'ClassLoader' => $cleanup(read('Vn/ClassLoader.php')),
+    'Psr0Loader' => $cleanup(read('Vn/Psr0Loader.php')),
+    'Psr4Loader' => $cleanup(read('Vn/Psr4Loader.php')),
   ];
 
   $includeCode = function ($m) use ($phpSources) {

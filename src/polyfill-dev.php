@@ -21,8 +21,9 @@ namespace {
     require_once __DIR__ . '/Vn/Versions.php';
     require_once __DIR__ . '/Vn/Package.php';
     require_once __DIR__ . '/Vn/Scanner.php';
+    require_once __DIR__ . '/Vn/Psr0Loader.php';
+    require_once __DIR__ . '/Vn/Psr4Loader.php';
     require_once __DIR__ . '/Vn/PathLoad.php';
-    require_once __DIR__ . '/Vn/ClassLoader.php';
   }
 
   // New or upgraded instance.

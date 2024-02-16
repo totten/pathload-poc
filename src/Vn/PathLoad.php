@@ -38,6 +38,14 @@ class PathLoad implements \PathLoadInterface {
   public $loadedPackages = [];
 
   /**
+   * Log of package activations. Used to re-initialize class-loader if we upgrade.
+   *
+   * @var array
+   * @internal
+   */
+  public $activatedPackages = [];
+
+  /**
    * List of hints for class-loading. If someone tries to use a matching class, then
    * load the corresponding package.
    *
@@ -51,10 +59,16 @@ class PathLoad implements \PathLoadInterface {
   public $availableNamespaces;
 
   /**
-   * @var ClassLoader
+   * @var \PathLoad\Vn\Psr0Loader
    * @internal
    */
-  public $classLoader;
+  public $psr0;
+
+  /**
+   * @var \PathLoad\Vn\Psr4Loader
+   * @internal
+   */
+  public $psr4;
 
   /**
    * @param int $version
@@ -72,6 +86,9 @@ class PathLoad implements \PathLoadInterface {
     $new = new static();
     $new->version = $version;
     $new->scanner = new Scanner();
+    $new->psr0 = new Psr0Loader();
+    $new->psr4 = new Psr4Loader();
+    $new->register();
 
     // The exact protocol for assimilating $old instances may need change.
     // This seems like a fair guess as long as old properties are forward-compatible.
@@ -81,7 +98,6 @@ class PathLoad implements \PathLoadInterface {
       foreach ($baseDirs as $baseDir) {
         $new->addSearchDir($baseDir);
       }
-      $new->classLoader = new ClassLoader();
     }
     else {
       // TIP: You might use $old->version to decide what to use.
@@ -90,10 +106,11 @@ class PathLoad implements \PathLoadInterface {
       }
       $new->loadedPackages = $old->loadedPackages;
       $new->availableNamespaces = $old->availableNamespaces;
-      $new->classLoader = $old->classLoader;
+      foreach ($old->activatedPackages as $activatedPackage) {
+        $new->activatePackage($activatedPackage['name'], $activatedPackage['dir'], $activatedPackage['config']);
+      }
     }
 
-    $new->register();
     return new Versions($new);
   }
 
@@ -174,7 +191,7 @@ class PathLoad implements \PathLoadInterface {
       $this->loadPackagesByNamespace('_', explode('_', $class));
     }
 
-    return $this->classLoader->loadClass($class);
+    return $this->psr4->loadClass($class) || $this->psr0->loadClass($class);
   }
 
   /**
@@ -287,23 +304,37 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * @param string $name
+   * Given a configuration for the package, activate the correspond autoloader rules.
+   *
+   * @param string $majorName
    *   Ex: 'cloud-io@1'
-   *   Ex: 'cloud-io@1.2.3'
    * @param string|null $dir
    *   Used for applying the 'autoload' rules.
    *   Ex: '/var/www/lib/cloud-io@1.2.3'
    * @param array $config
    *   Ex: ['autoload' => ['psr4' => ...], 'require-namespace' => [...], 'require-package' => [...]]
-   *
    * @return \PathLoadInterface
    */
-  public function activatePackage(string $name, ?string $dir, array $config): \PathLoadInterface {
+  public function activatePackage(string $majorName, ?string $dir, array $config): \PathLoadInterface {
     if (isset($config['autoload'])) {
       if ($dir === NULL) {
-        throw new \RuntimeException("Cannot activate package $name. The 'autoload' property requires a base-directory.");
+        throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
       }
-      $this->classLoader->addAutoloadJson($dir, $config['autoload']);
+
+      $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
+
+      if (!empty($config['autoload']['include'])) {
+        foreach ($config['autoload']['include'] as $file) {
+          doRequire($dir . DIRECTORY_SEPARATOR . $file);
+        }
+      }
+      if (isset($config['autoload']['psr-0'])) {
+        $this->psr0->addAll($dir, $config['autoload']['psr-0']);
+      }
+      if (isset($config['autoload']['psr-4'])) {
+        $this->psr4->addAll($dir, $config['autoload']['psr-4']);
+      }
+
       foreach ($config['require-namespace'] ?? [] as $nsRule) {
         foreach ((array) $nsRule['package'] as $package) {
           foreach ((array) $nsRule['prefix'] as $prefix) {
@@ -311,6 +342,7 @@ class PathLoad implements \PathLoadInterface {
           }
         }
       }
+
       foreach ($config['require-package'] ?? [] as $package) {
         $this->loadPackage($package);
       }

@@ -37,7 +37,7 @@
  * dependencies. This would be appropriate for single-file PHP package (`cloud-io@1.0.0.php`)
  * which lack direct support for `pathload.json`.
  *
- * @method PathLoadInterface activatePackage(string $package, string $dir, array $config)
+ * @method PathLoadInterface activatePackage(string $majorName, string $dir, array $config)
  */
 interface PathLoadInterface {
 
