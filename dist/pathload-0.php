@@ -41,7 +41,7 @@ namespace {
      * dependencies. This would be appropriate for single-file PHP package (`cloud-io@1.0.0.php`)
      * which lack direct support for `pathload.json`.
      *
-     * @method PathLoadInterface activatePackage(string $package, string $dir, array $config)
+     * @method PathLoadInterface activatePackage(string $majorName, string $dir, array $config)
      */
     interface PathLoadInterface {
     }
@@ -51,7 +51,7 @@ namespace {
 namespace PathLoad\V0 {
   if (!class_exists('PathLoad')) {
     function doRequire(string $file) {
-      return require $file;
+      require_once $file;
     }
     /**
      * A facade for returning version-compliant flavors of PathLoad.
@@ -235,53 +235,25 @@ namespace PathLoad\V0 {
         }
       }
     }
-    class ClassLoader {
+    class Psr0Loader {
       /**
        * @var array
+       *  Ex: $paths['F']['Foo_'][0] = '/var/www/app/lib/foo@1.0.0/src/';
        * @internal
        */
-      public $prefixes = [];
-      public function addAutoloadJson(string $dir, array $autoloadJson) {
-        if (!empty($autoloadJson['include'])) {
-          // Would it be better to just warn? We can't really do the same semantics, but this
-          // arguably might help in some cases.
-          foreach ($autoloadJson['include'] as $file) {
-            $this->requireFile($dir . '/' . $file);
-          }
-        }
-        foreach ($autoloadJson['psr-4'] ?? [] as $prefix => $relPaths) {
-          foreach ($relPaths as $relPath) {
-            $this->addNamespace($prefix, $dir . '/' . $relPath);
-          }
-        }
-        foreach ($autoloadJson['psr-0'] ?? [] as $prefix => $relPath) {
-          error_log("TODO: Load psr-0 data from $dir ($prefix => $relPath");
-          // $this->addNamespace($prefix, $relPath);
-        }
-      }
+      public $paths = [];
       /**
-       * Adds a base directory for a namespace prefix.
-       *
-       * @param string $prefix The namespace prefix.
-       * @param string $base_dir A base directory for class files in the
-       * namespace.
-       * @param bool $prepend If true, prepend the base directory to the stack
-       * instead of appending it; this causes it to be searched first rather
-       * than last.
-       *
-       * @return void
+       * @param string $dir
+       * @param array $config
+       *   Ex: ['Foo_' => ['src/']] or ['Foo_' => ['Foo_']]
        */
-      public function addNamespace($prefix, $base_dir, $prepend = FALSE) {
-        $prefix = trim($prefix, '\\') . '\\';
-        $base_dir = rtrim($base_dir, DIRECTORY_SEPARATOR) . '/';
-        if (isset($this->prefixes[$prefix]) === FALSE) {
-          $this->prefixes[$prefix] = [];
-        }
-        if ($prepend) {
-          array_unshift($this->prefixes[$prefix], $base_dir);
-        }
-        else {
-          array_push($this->prefixes[$prefix], $base_dir);
+      public function addAll(string $dir, array $config) {
+        $dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        foreach ($config as $prefix => $relPaths) {
+          $bucket = $prefix[0];
+          foreach ((array) $relPaths as $relPath) {
+            $this->paths[$bucket][$prefix][] = $dir . $relPath;
+          }
         }
       }
       /**
@@ -290,14 +262,71 @@ namespace PathLoad\V0 {
        * @param string $class The fully-qualified class name.
        * @return mixed The mapped file name on success, or boolean false on failure.
        */
-      public function loadClass($class) {
+      public function loadClass(string $class) {
+        $bucket = $class[0];
+        if (!isset($this->paths[$bucket])) {
+          return FALSE;
+        }
+        $file = DIRECTORY_SEPARATOR . str_replace(['_', '\\'], [DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR], $class) . '.php';
+        foreach ($this->paths[$bucket] as $prefix => $paths) {
+          if ($prefix === substr($class, 0, strlen($prefix))) {
+            foreach ($paths as $path) {
+              $fullFile = $path . $file;
+              if (file_exists($fullFile)) {
+                doRequire($fullFile);
+                return $fullFile;
+              }
+            }
+          }
+        }
+        return FALSE;
+      }
+    }
+    class Psr4Loader {
+      /**
+       * @var array
+       *   Ex: $prefixes['Foo\\'][0] = '/var/www/app/lib/foo@1.0.0/src/']
+       * @internal
+       */
+      public $prefixes = [];
+      public function addAll(string $dir, array $config) {
+        foreach ($config as $prefix => $relPaths) {
+          foreach ($relPaths as $relPath) {
+            $this->addNamespace($prefix, $dir . '/' . $relPath);
+          }
+        }
+      }
+      /**
+       * Adds a base directory for a namespace prefix.
+       *
+       * @param string $prefix
+       *   The namespace prefix.
+       * @param string $baseDir
+       *   A base directory for class files in the namespace.
+       * @return void
+       */
+      private function addNamespace($prefix, $baseDir) {
+        $prefix = trim($prefix, '\\') . '\\';
+        $baseDir = rtrim($baseDir, DIRECTORY_SEPARATOR) . '/';
+        if (isset($this->prefixes[$prefix]) === FALSE) {
+          $this->prefixes[$prefix] = [];
+        }
+        array_push($this->prefixes[$prefix], $baseDir);
+      }
+      /**
+       * Loads the class file for a given class name.
+       *
+       * @param string $class The fully-qualified class name.
+       * @return mixed The mapped file name on success, or boolean false on failure.
+       */
+      public function loadClass(string $class) {
         $prefix = $class;
         while (FALSE !== $pos = strrpos($prefix, '\\')) {
           $prefix = substr($class, 0, $pos + 1);
-          $relative_class = substr($class, $pos + 1);
-          $mapped_file = $this->loadMappedFile($prefix, $relative_class);
-          if ($mapped_file) {
-            return $mapped_file;
+          $relativeClass = substr($class, $pos + 1);
+          if ($mappedFile = $this->findRelativeClass($prefix, $relativeClass)) {
+            doRequire($mappedFile);
+            return $mappedFile;
           }
           $prefix = rtrim($prefix, '\\');
         }
@@ -306,34 +335,23 @@ namespace PathLoad\V0 {
       /**
        * Load the mapped file for a namespace prefix and relative class.
        *
-       * @param string $prefix The namespace prefix.
-       * @param string $relative_class The relative class name.
-       * @return mixed
-       *   Boolean false if no mapped file can be loaded, or the
-       *   name of the mapped file that was loaded.
+       * @param string $prefix
+       *   The namespace prefix.
+       * @param string $relativeClass
+       *   The relative class name.
+       * @return string|FALSE
+       *   Matched file name, or FALSE if none found.
        */
-      protected function loadMappedFile($prefix, $relative_class) {
+      private function findRelativeClass($prefix, $relativeClass) {
         if (isset($this->prefixes[$prefix]) === FALSE) {
           return FALSE;
         }
-        foreach ($this->prefixes[$prefix] as $base_dir) {
-          $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
-          if ($this->requireFile($file)) {
+        $relFile = str_replace('\\', DIRECTORY_SEPARATOR, $relativeClass) . '.php';
+        foreach ($this->prefixes[$prefix] as $baseDir) {
+          $file = $baseDir . $relFile;
+          if (file_exists($file)) {
             return $file;
           }
-        }
-        return FALSE;
-      }
-      /**
-       * If a file exists, require it from the file system.
-       *
-       * @param string $file The file to require.
-       * @return bool True if the file exists, false if not.
-       */
-      protected function requireFile($file) {
-        if (file_exists($file)) {
-          require $file;
-          return TRUE;
         }
         return FALSE;
       }
@@ -370,6 +388,13 @@ namespace PathLoad\V0 {
        */
       public $loadedPackages = [];
       /**
+       * Log of package activations. Used to re-initialize class-loader if we upgrade.
+       *
+       * @var array
+       * @internal
+       */
+      public $activatedPackages = [];
+      /**
        * List of hints for class-loading. If someone tries to use a matching class, then
        * load the corresponding package.
        *
@@ -382,10 +407,15 @@ namespace PathLoad\V0 {
        */
       public $availableNamespaces;
       /**
-       * @var ClassLoader
+       * @var \PathLoad\Vn\Psr0Loader
        * @internal
        */
-      public $classLoader;
+      public $psr0;
+      /**
+       * @var \PathLoad\Vn\Psr4Loader
+       * @internal
+       */
+      public $psr4;
       /**
        * @param int $version
        *   Identify the version being instantiated.
@@ -401,6 +431,9 @@ namespace PathLoad\V0 {
         $new = new static();
         $new->version = $version;
         $new->scanner = new Scanner();
+        $new->psr0 = new Psr0Loader();
+        $new->psr4 = new Psr4Loader();
+        $new->register();
         // The exact protocol for assimilating $old instances may need change.
         // This seems like a fair guess as long as old properties are forward-compatible.
 
@@ -409,7 +442,6 @@ namespace PathLoad\V0 {
           foreach ($baseDirs as $baseDir) {
             $new->addSearchDir($baseDir);
           }
-          $new->classLoader = new ClassLoader();
         }
         else {
           // TIP: You might use $old->version to decide what to use.
@@ -418,9 +450,10 @@ namespace PathLoad\V0 {
           }
           $new->loadedPackages = $old->loadedPackages;
           $new->availableNamespaces = $old->availableNamespaces;
-          $new->classLoader = $old->classLoader;
+          foreach ($old->activatedPackages as $activatedPackage) {
+            $new->activatePackage($activatedPackage['name'], $activatedPackage['dir'], $activatedPackage['config']);
+          }
         }
-        $new->register();
         return new Versions($new);
       }
       /**
@@ -494,7 +527,7 @@ namespace PathLoad\V0 {
         elseif (strpos($class, '_') !== FALSE) {
           $this->loadPackagesByNamespace('_', explode('_', $class));
         }
-        return $this->classLoader->loadClass($class);
+        return $this->psr4->loadClass($class) || $this->psr0->loadClass($class);
       }
       /**
        * If the application requests class "Foo\Bar\Whiz\Bang", then you should load
@@ -595,23 +628,34 @@ namespace PathLoad\V0 {
         }
       }
       /**
-       * @param string $name
+       * Given a configuration for the package, activate the correspond autoloader rules.
+       *
+       * @param string $majorName
        *   Ex: 'cloud-io@1'
-       *   Ex: 'cloud-io@1.2.3'
        * @param string|null $dir
        *   Used for applying the 'autoload' rules.
        *   Ex: '/var/www/lib/cloud-io@1.2.3'
        * @param array $config
        *   Ex: ['autoload' => ['psr4' => ...], 'require-namespace' => [...], 'require-package' => [...]]
-       *
        * @return \PathLoadInterface
        */
-      public function activatePackage(string $name, ?string $dir, array $config): \PathLoadInterface {
+      public function activatePackage(string $majorName, ?string $dir, array $config): \PathLoadInterface {
         if (isset($config['autoload'])) {
           if ($dir === NULL) {
-            throw new \RuntimeException("Cannot activate package $name. The 'autoload' property requires a base-directory.");
+            throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
           }
-          $this->classLoader->addAutoloadJson($dir, $config['autoload']);
+          $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
+          if (!empty($config['autoload']['include'])) {
+            foreach ($config['autoload']['include'] as $file) {
+              doRequire($dir . DIRECTORY_SEPARATOR . $file);
+            }
+          }
+          if (isset($config['autoload']['psr-0'])) {
+            $this->psr0->addAll($dir, $config['autoload']['psr-0']);
+          }
+          if (isset($config['autoload']['psr-4'])) {
+            $this->psr4->addAll($dir, $config['autoload']['psr-4']);
+          }
           foreach ($config['require-namespace'] ?? [] as $nsRule) {
             foreach ((array) $nsRule['package'] as $package) {
               foreach ((array) $nsRule['prefix'] as $prefix) {

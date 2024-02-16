@@ -1,6 +1,5 @@
 <?php
-namespace ExtraLib;
-
+namespace ExtraLib {
 // Classes in 'extralib' depend on packages from 'corelib@1'.
 \pathload()->activatePackage('extralib@1' , __DIR__, [
   'autoload' => [
@@ -12,12 +11,12 @@ namespace ExtraLib;
     ['package' => 'corelib@1', 'prefix' => 'Example\\'],
   ]
 ]);
-?><?php
-namespace Example;
-
+}
+namespace Example {
 class ExtraLib {
   public static function doStuff() {
     CoreLib::greet();
     echo "and hello from extralib v1.0.0\n";
   }
+}
 }
