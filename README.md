@@ -89,7 +89,7 @@ this library in a few formats:
 * __PHP Archive File__ (`cloud-file-io@1.2.3.phar`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
 * __Local Directory__ (`cloud-file-io@1.2.3/`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
 
-A single source may be sufficient for a small library. As you get larger content or more classes, it becomes advantageous to use a
+A single PHP file may be sufficient for a small library. As you get larger content or more classes, it becomes advantageous to use a
 PHAR or directory. These should be organized per PSR-0 or PSR-4. To describe the structure more precisely,
 include the file `pathload.main.php` or `pathload.json`. These examples are equivalent:
 
