@@ -8,6 +8,16 @@ class RetroScore_Example_Greeter {
 
 }
 }
+namespace {
+pathload()->activatePackage('retrolib@1', __DIR__, [
+  'autoload' => [
+    'psr-0' => [
+      'RetroScore_' => ['score/'],
+      'RetroSlash\\' => 'slash/',
+    ],
+  ]
+]);
+}
 namespace RetroSlash\Example {
 class Greeter {
 

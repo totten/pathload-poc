@@ -1,8 +1,0 @@
-{
-  "autoload": {
-    "psr-0": {
-      "RetroScore_": ["score/"],
-      "RetroSlash\\": "slash/"
-    }
-  }
-}
