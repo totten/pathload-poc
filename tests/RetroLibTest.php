@@ -77,4 +77,40 @@ class RetroLibTest extends PathLoadTestCase {
     $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.1.0"]);
   }
 
+  public function testAutoload_Phar_v100_Slash() {
+    $libDir = $this->setUpRetroLib('1.0.0', 'phar');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroSlash\Example\Greeter v1.0.0',
+    ]);
+    \RetroSlash\Example\Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.0.0.phar"]);
+  }
+
+  public function testAutoload_Phar_v100_Score() {
+    $libDir = $this->setUpRetroLib('1.0.0', 'phar');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroScore_Example_Greeter v1.0.0',
+    ]);
+    \RetroScore_Example_Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.0.0.phar"]);
+  }
+
+  public function testAutoload_Php_v100_Slash() {
+    $libDir = $this->setUpRetroLib('1.0.0', 'php');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroSlash\Example\Greeter v1.0.0',
+    ]);
+    \RetroSlash\Example\Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.0.0.php"]);
+  }
+
+  public function testAutoload_Php_v100_Score() {
+    $libDir = $this->setUpRetroLib('1.0.0', 'php');
+    $this->expectOutputLines([
+      'hello from retrolib\'s RetroScore_Example_Greeter v1.0.0',
+    ]);
+    \RetroScore_Example_Greeter::greet();
+    $this->assertLoaded(['retrolib@1' => "$libDir/retrolib@1.0.0.php"]);
+  }
+
 }
