@@ -34,13 +34,12 @@ class Scanner {
   public function addRule(array $rule): void {
     //internal// In prior iterations, this deduped with a guard on `$this->oldRules`. Don't see the point now.
     $id = static::id($rule);
-    $this->allRules[$id] = $rule;
-    $this->newRules[$id] = $rule;
+    $this->newRules[$id] = $this->allRules[$id] = $rule;
   }
 
   public function reset(): void {
     $this->newRules = $this->allRules;
-    $this->oldRules = [];
+    //internal// $this->oldRules = [];
   }
 
   /**
@@ -81,15 +80,15 @@ class Scanner {
     }
   }
 
-  protected static function id(array $searchRule): string {
-    if (isset($searchRule['glob'])) {
-      return $searchRule['glob'];
+  protected static function id(array $rule): string {
+    if (isset($rule['glob'])) {
+      return $rule['glob'];
     }
-    elseif (isset($searchRule['file'])) {
-      return md5(implode(' ', [$searchRule['file'], $searchRule['package'], $searchRule['version']]));
+    elseif (isset($rule['file'])) {
+      return md5(implode(' ', [$rule['file'], $rule['package'], $rule['version']]));
     }
     else {
-      throw new \RuntimeException("Cannot identify rule: " . json_encode($searchRule));
+      throw new \RuntimeException("Cannot identify rule: " . json_encode($rule));
     }
   }
 

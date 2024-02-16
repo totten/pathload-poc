@@ -54,13 +54,7 @@ namespace PathLoad\V0 {
       require_once $file;
     }
     /**
-     * A facade for returning version-compliant flavors of PathLoad.
-     *
-     * $x[0] ==> PathLoad instance compatible with v0
-     * $x[1] ==> PathLoad instance compatible with v1
-     * $x[12] ==> PathLoad instance compatible with v12
-     * $x['top'] ==> Whatever version is latest/current
-     * $x->top ==> Whatever version is latest/current
+     * Locate version-compliant instances of PathLoad.
      */
     class Versions implements \ArrayAccess {
       public $top;
@@ -70,8 +64,7 @@ namespace PathLoad\V0 {
       public function offsetExists($version): bool {
         return ($version === 'top' || $version <= $this->top->version);
       }
-      #[\ReturnTypeWillChange]
-      public function offsetGet($version) {
+      public function offsetGet($version): ?\PathLoadInterface {
         if ($version === 'top' || $version <= $this->top->version) {
           return $this->top;
         }
@@ -180,12 +173,10 @@ namespace PathLoad\V0 {
        */
       public function addRule(array $rule): void {
         $id = static::id($rule);
-        $this->allRules[$id] = $rule;
-        $this->newRules[$id] = $rule;
+        $this->newRules[$id] = $this->allRules[$id] = $rule;
       }
       public function reset(): void {
         $this->newRules = $this->allRules;
-        $this->oldRules = [];
       }
       /**
        * Evaluate any rules that have a chance of finding $packageHint.
@@ -223,15 +214,15 @@ namespace PathLoad\V0 {
           }
         }
       }
-      protected static function id(array $searchRule): string {
-        if (isset($searchRule['glob'])) {
-          return $searchRule['glob'];
+      protected static function id(array $rule): string {
+        if (isset($rule['glob'])) {
+          return $rule['glob'];
         }
-        elseif (isset($searchRule['file'])) {
-          return md5(implode(' ', [$searchRule['file'], $searchRule['package'], $searchRule['version']]));
+        elseif (isset($rule['file'])) {
+          return md5(implode(' ', [$rule['file'], $rule['package'], $rule['version']]));
         }
         else {
-          throw new \RuntimeException("Cannot identify rule: " . json_encode($searchRule));
+          throw new \RuntimeException("Cannot identify rule: " . json_encode($rule));
         }
       }
     }
@@ -426,17 +417,16 @@ namespace PathLoad\V0 {
        */
       public static function create(int $version, ?\PathLoadInterface $old = NULL) {
         if ($old !== NULL) {
-          $old->unregister();
+          spl_autoload_unregister([$old, 'loadClass']);
         }
         $new = new static();
         $new->version = $version;
         $new->scanner = new Scanner();
         $new->psr0 = new Psr0Loader();
         $new->psr4 = new Psr4Loader();
-        $new->register();
+        spl_autoload_register([$new, 'loadClass']);
         // The exact protocol for assimilating $old instances may need change.
         // This seems like a fair guess as long as old properties are forward-compatible.
-
         if ($old === NULL) {
           $baseDirs = getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : [];
           foreach ($baseDirs as $baseDir) {
@@ -455,6 +445,10 @@ namespace PathLoad\V0 {
           }
         }
         return new Versions($new);
+      }
+      public function reset(): \PathLoadInterface {
+        $this->scanner->reset();
+        return $this;
       }
       /**
        * Append a directory (with many packages) to the search-path.
@@ -501,25 +495,6 @@ namespace PathLoad\V0 {
         }
         return $this;
       }
-      /**
-       * Register the autoloader.
-       */
-      public function register(): \PathLoadInterface {
-        spl_autoload_register([$this, 'loadClass']);
-        return $this;
-      }
-      /**
-       * Un-register the autoloader.
-       */
-      public function unregister(): \PathLoadInterface {
-        spl_autoload_unregister([$this, 'loadClass']);
-        return $this;
-      }
-      /**
-       * @param string $class
-       * @return mixed
-       * @see \spl_autoload_register()
-       */
       public function loadClass(string $class) {
         if (strpos($class, '\\') !== FALSE) {
           $this->loadPackagesByNamespace('\\', explode('\\', $class));
@@ -560,8 +535,7 @@ namespace PathLoad\V0 {
             }
           }
         } while ($foundPackages);
-        // Loading a package could produce metadata about other packages.
-        // Assimilate those too.
+        // Loading a package could produce metadata about other packages. Assimilate those too.
       }
       /**
        * Load the content of a package.
@@ -575,7 +549,7 @@ namespace PathLoad\V0 {
         if (isset($this->loadedPackages[$majorName])) {
           return $this->loadedPackages[$majorName]->version;
         }
-        $this->scanAvailablePackages($majorName);
+        $this->scanAvailablePackages(explode('@', $majorName, 2)[0], $this->availablePackages);
         if (!isset($this->availablePackages[$majorName])) {
           return NULL;
         }
@@ -597,18 +571,16 @@ namespace PathLoad\V0 {
             return NULL;
         }
       }
-      private function scanAvailablePackages(string $majorName): void {
-        [, $name] = Package::parseExpr($majorName);
-        foreach ($this->scanner->scan($name) as $packageRec) {
-          /** @var Package $packageRec */
-          if (!isset($this->availablePackages[$packageRec->majorName]) || \version_compare($packageRec->version, $this->availablePackages[$packageRec->majorName]->version, '>')) {
-            $this->availablePackages[$packageRec->majorName] = $packageRec;
+      private function scanAvailablePackages(string $hint, array &$avail): void {
+        foreach ($this->scanner->scan($hint) as $package) {
+          /** @var Package $package */
+          if (!isset($avail[$package->majorName]) || \version_compare($package->version, $avail[$package->majorName]->version, '>')) {
+            $avail[$package->majorName] = $package;
           }
         }
       }
       /**
-       * When loading a package, you may find metadata files
-       * like "pathload.main.php" or "pathload.json". Load these.
+       * When loading a package, execute metadata files like "pathload.main.php" or "pathload.json".
        *
        * @param Package $package
        * @param string $dir
@@ -623,8 +595,8 @@ namespace PathLoad\V0 {
         }
         elseif (file_exists($jsonFile)) {
           $jsonData = json_decode(file_get_contents($jsonFile), TRUE);
-          $packageId = $package->name . '@' . $package->version;
-          $this->activatePackage($packageId, $dir, $jsonData);
+          $id = $package->name . '@' . $package->version;
+          $this->activatePackage($id, $dir, $jsonData);
         }
       }
       /**
@@ -640,32 +612,33 @@ namespace PathLoad\V0 {
        * @return \PathLoadInterface
        */
       public function activatePackage(string $majorName, ?string $dir, array $config): \PathLoadInterface {
-        if (isset($config['autoload'])) {
-          if ($dir === NULL) {
-            throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
+        if (!isset($config['autoload'])) {
+          return $this;
+        }
+        if ($dir === NULL) {
+          throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
+        }
+        $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
+        if (!empty($config['autoload']['include'])) {
+          foreach ($config['autoload']['include'] as $file) {
+            doRequire($dir . DIRECTORY_SEPARATOR . $file);
           }
-          $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
-          if (!empty($config['autoload']['include'])) {
-            foreach ($config['autoload']['include'] as $file) {
-              doRequire($dir . DIRECTORY_SEPARATOR . $file);
+        }
+        if (isset($config['autoload']['psr-0'])) {
+          $this->psr0->addAll($dir, $config['autoload']['psr-0']);
+        }
+        if (isset($config['autoload']['psr-4'])) {
+          $this->psr4->addAll($dir, $config['autoload']['psr-4']);
+        }
+        foreach ($config['require-namespace'] ?? [] as $nsRule) {
+          foreach ((array) $nsRule['package'] as $package) {
+            foreach ((array) $nsRule['prefix'] as $prefix) {
+              $this->availableNamespaces[$prefix][$package] = $package;
             }
           }
-          if (isset($config['autoload']['psr-0'])) {
-            $this->psr0->addAll($dir, $config['autoload']['psr-0']);
-          }
-          if (isset($config['autoload']['psr-4'])) {
-            $this->psr4->addAll($dir, $config['autoload']['psr-4']);
-          }
-          foreach ($config['require-namespace'] ?? [] as $nsRule) {
-            foreach ((array) $nsRule['package'] as $package) {
-              foreach ((array) $nsRule['prefix'] as $prefix) {
-                $this->availableNamespaces[$prefix][$package] = $package;
-              }
-            }
-          }
-          foreach ($config['require-package'] ?? [] as $package) {
-            $this->loadPackage($package);
-          }
+        }
+        foreach ($config['require-package'] ?? [] as $package) {
+          $this->loadPackage($package);
         }
         return $this;
       }

@@ -33,7 +33,6 @@ class Psr4Loader {
     if (isset($this->prefixes[$prefix]) === FALSE) {
       $this->prefixes[$prefix] = [];
     }
-
     array_push($this->prefixes[$prefix], $baseDir);
   }
 

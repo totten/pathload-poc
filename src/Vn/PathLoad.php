@@ -80,7 +80,7 @@ class PathLoad implements \PathLoadInterface {
    */
   public static function create(int $version, ?\PathLoadInterface $old = NULL) {
     if ($old !== NULL) {
-      $old->unregister();
+      spl_autoload_unregister([$old, 'loadClass']);
     }
 
     $new = new static();
@@ -88,7 +88,7 @@ class PathLoad implements \PathLoadInterface {
     $new->scanner = new Scanner();
     $new->psr0 = new Psr0Loader();
     $new->psr4 = new Psr4Loader();
-    $new->register();
+    spl_autoload_register([$new, 'loadClass']);
 
     // The exact protocol for assimilating $old instances may need change.
     // This seems like a fair guess as long as old properties are forward-compatible.
@@ -112,6 +112,11 @@ class PathLoad implements \PathLoadInterface {
     }
 
     return new Versions($new);
+  }
+
+  public function reset(): \PathLoadInterface {
+    $this->scanner->reset();
+    return $this;
   }
 
   /**
@@ -162,27 +167,6 @@ class PathLoad implements \PathLoadInterface {
     return $this;
   }
 
-  /**
-   * Register the autoloader.
-   */
-  public function register(): \PathLoadInterface {
-    spl_autoload_register([$this, 'loadClass']);
-    return $this;
-  }
-
-  /**
-   * Un-register the autoloader.
-   */
-  public function unregister(): \PathLoadInterface {
-    spl_autoload_unregister([$this, 'loadClass']);
-    return $this;
-  }
-
-  /**
-   * @param string $class
-   * @return mixed
-   * @see \spl_autoload_register()
-   */
   public function loadClass(string $class) {
     if (strpos($class, '\\') !== FALSE) {
       $this->loadPackagesByNamespace('\\', explode('\\', $class));
@@ -225,8 +209,7 @@ class PathLoad implements \PathLoadInterface {
         }
       }
     } while ($foundPackages);
-    // Loading a package could produce metadata about other packages.
-    // Assimilate those too.
+    // Loading a package could produce metadata about other packages. Assimilate those too.
   }
 
   /**
@@ -242,7 +225,7 @@ class PathLoad implements \PathLoadInterface {
       return $this->loadedPackages[$majorName]->version;
     }
 
-    $this->scanAvailablePackages($majorName);
+    $this->scanAvailablePackages(explode('@', $majorName, 2)[0], $this->availablePackages);
     if (!isset($this->availablePackages[$majorName])) {
       return NULL;
     }
@@ -270,19 +253,17 @@ class PathLoad implements \PathLoadInterface {
     }
   }
 
-  private function scanAvailablePackages(string $majorName): void {
-    [, $name] = Package::parseExpr($majorName);
-    foreach ($this->scanner->scan($name) as $packageRec) {
-      /** @var Package $packageRec */
-      if (!isset($this->availablePackages[$packageRec->majorName]) || \version_compare($packageRec->version, $this->availablePackages[$packageRec->majorName]->version, '>')) {
-        $this->availablePackages[$packageRec->majorName] = $packageRec;
+  private function scanAvailablePackages(string $hint, array &$avail): void {
+    foreach ($this->scanner->scan($hint) as $package) {
+      /** @var Package $package */
+      if (!isset($avail[$package->majorName]) || \version_compare($package->version, $avail[$package->majorName]->version, '>')) {
+        $avail[$package->majorName] = $package;
       }
     }
   }
 
   /**
-   * When loading a package, you may find metadata files
-   * like "pathload.main.php" or "pathload.json". Load these.
+   * When loading a package, execute metadata files like "pathload.main.php" or "pathload.json".
    *
    * @param Package $package
    * @param string $dir
@@ -298,8 +279,8 @@ class PathLoad implements \PathLoadInterface {
     }
     elseif (file_exists($jsonFile)) {
       $jsonData = json_decode(file_get_contents($jsonFile), TRUE);
-      $packageId = $package->name . '@' . $package->version;
-      $this->activatePackage($packageId, $dir, $jsonData);
+      $id = $package->name . '@' . $package->version;
+      $this->activatePackage($id, $dir, $jsonData);
     }
   }
 
@@ -316,36 +297,37 @@ class PathLoad implements \PathLoadInterface {
    * @return \PathLoadInterface
    */
   public function activatePackage(string $majorName, ?string $dir, array $config): \PathLoadInterface {
-    if (isset($config['autoload'])) {
-      if ($dir === NULL) {
-        throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
+    if (!isset($config['autoload'])) {
+      return $this;
+    }
+    if ($dir === NULL) {
+      throw new \RuntimeException("Cannot activate package $majorName. The 'autoload' property requires a base-directory.");
+    }
+
+    $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
+
+    if (!empty($config['autoload']['include'])) {
+      foreach ($config['autoload']['include'] as $file) {
+        doRequire($dir . DIRECTORY_SEPARATOR . $file);
       }
+    }
+    if (isset($config['autoload']['psr-0'])) {
+      $this->psr0->addAll($dir, $config['autoload']['psr-0']);
+    }
+    if (isset($config['autoload']['psr-4'])) {
+      $this->psr4->addAll($dir, $config['autoload']['psr-4']);
+    }
 
-      $this->activatedPackages[] = ['name' => $majorName, 'dir' => $dir, 'config' => $config];
-
-      if (!empty($config['autoload']['include'])) {
-        foreach ($config['autoload']['include'] as $file) {
-          doRequire($dir . DIRECTORY_SEPARATOR . $file);
+    foreach ($config['require-namespace'] ?? [] as $nsRule) {
+      foreach ((array) $nsRule['package'] as $package) {
+        foreach ((array) $nsRule['prefix'] as $prefix) {
+          $this->availableNamespaces[$prefix][$package] = $package;
         }
       }
-      if (isset($config['autoload']['psr-0'])) {
-        $this->psr0->addAll($dir, $config['autoload']['psr-0']);
-      }
-      if (isset($config['autoload']['psr-4'])) {
-        $this->psr4->addAll($dir, $config['autoload']['psr-4']);
-      }
+    }
 
-      foreach ($config['require-namespace'] ?? [] as $nsRule) {
-        foreach ((array) $nsRule['package'] as $package) {
-          foreach ((array) $nsRule['prefix'] as $prefix) {
-            $this->availableNamespaces[$prefix][$package] = $package;
-          }
-        }
-      }
-
-      foreach ($config['require-package'] ?? [] as $package) {
-        $this->loadPackage($package);
-      }
+    foreach ($config['require-package'] ?? [] as $package) {
+      $this->loadPackage($package);
     }
     return $this;
   }

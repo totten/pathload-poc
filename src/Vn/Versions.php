@@ -2,16 +2,17 @@
 
 namespace PathLoad\Vn;
 
+
 /**
- * A facade for returning version-compliant flavors of PathLoad.
- *
- * $x[0] ==> PathLoad instance compatible with v0
- * $x[1] ==> PathLoad instance compatible with v1
- * $x[12] ==> PathLoad instance compatible with v12
- * $x['top'] ==> Whatever version is latest/current
- * $x->top ==> Whatever version is latest/current
+ * Locate version-compliant instances of PathLoad.
  */
 class Versions implements \ArrayAccess {
+
+  //INTERNAL//  $x[0] ==> PathLoad instance compatible with v0
+  //INTERNAL//  $x[1] ==> PathLoad instance compatible with v1
+  //INTERNAL//  $x[12] ==> PathLoad instance compatible with v12
+  //INTERNAL//  $x['top'] ==> Whatever version is latest/current
+  //INTERNAL//  $x->top ==> Whatever version is latest/current
 
   public $top;
 
@@ -23,8 +24,7 @@ class Versions implements \ArrayAccess {
     return ($version === 'top' || $version <= $this->top->version);
   }
 
-  #[\ReturnTypeWillChange]
-  public function offsetGet($version) {
+  public function offsetGet($version): ?\PathLoadInterface {
     if ($version === 'top' || $version <= $this->top->version) {
       return $this->top;
     }
