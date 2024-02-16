@@ -5,7 +5,7 @@ namespace PathLoad\Build;
 
 // This should give the real/default version. However, for purposes
 // of hacking/experimenting, you can override the version# during compilation.
-define('PATHLOAD_VERSION', getenv('PATHLOAD_VERSION') ?: 0);
+define('PATHLOAD_VERSION', getenv('PATHLOAD_VERSION') ?: (require dirname(__DIR__) . '/src/version.php'));
 
 /**
  * Ex: prjdir('dist')
@@ -40,7 +40,7 @@ function main() {
 function evalTemplate(bool $minify): string {
   $cleanup = ($minify ? '\PathLoad\Build\stripAllComments' : '\PathLoad\Build\stripInternalComments');
 
-  $template = read('template.php');
+  $template = read('polyfill-template.php');
   $phpSources = [
     'PathLoadInterface' => read('PathLoadInterface.php'),
 
