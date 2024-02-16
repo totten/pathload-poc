@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 function main($prog, ...$files): int {
