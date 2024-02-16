@@ -85,12 +85,13 @@ the upstream modules). Here's how:
 Let's consider an example library, `cloud-file-io@1.2.3`.  When packaging for distribution, you could provide
 this library in a few formats:
 
-* `cloud-file-io@1.2.3.php`: __PHP source file__: Loading this file should provide all the necessary classes.
-* `cloud-file-io@1.2.3.phar`: __PHP archive file__: It should setup a classoader using `pathload.main.php` or `pathload.json`.
-* `cloud-file-io@1.2.3/`: __Local directory__: It should setup a classloader using `pathload.main.php` or `pathload.json`.
+* __PHP Source File__ (`cloud-file-io@1.2.3.php`): This is just a plain old PHP file some `function`s or `class`es.
+* __PHP Archive File__ (`cloud-file-io@1.2.3.phar`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
+* __Local Directory__ (`cloud-file-io@1.2.3/`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
 
-The internal structure of a PHAR or directory should abide PSR-0 or PSR-4. To describe the structure more precisely,
-create `pathload.main.php` or `pathload.json`. These are equivalent:
+A single source may be sufficient for a small library. As you get larger content or more classes, it becomes advantageous to use a
+PHAR or directory. These should be organized per PSR-0 or PSR-4. To describe the structure more precisely,
+include the file `pathload.main.php` or `pathload.json`. These are examples are equivalent:
 
 ```php
 // pathload.main.php
@@ -113,7 +114,7 @@ pathload()->activatePackage('my-library@1', __DIR__, [
 }
 ```
 
-There are several examples of these formats in [example/lib/](./example). Each example starts
+There are several more examples in [example/lib/](./example). Each example starts
 out as a folder and is [compiled](./example/build.sh) to equivalent PHAR+PHP options. These
 examples are used extensively in the PathLoad test-suite to ensure that they are well formed.
 
