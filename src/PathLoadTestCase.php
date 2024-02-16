@@ -15,7 +15,7 @@ class PathLoadTestCase extends \PHPUnit\Framework\TestCase {
       $this->actualWarnings[] = $errstr;
     }, E_USER_WARNING);
 
-    $this->assertFalse(isset($GLOBALS['_PathLoad']), 'PathLoad has not been initialized yet.');
+    $this->assertFalse(isset($GLOBALS['_PathLoad']), 'PathLoad should not be active yet.');
   }
 
   protected function tearDown(): void {
