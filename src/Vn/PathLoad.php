@@ -109,22 +109,6 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * Add a specific package.
-   *
-   * - By giving the `$namespaces`+`$package`, we can integrate with the autoloader - we will auto-load a package when the relevant namespace(s) are used.
-   * - By giving the `$package`+`$baseDir`, we defer the need to `glob()` folders (until/unless someone actually needs $package).
-   *
-   * @param string $package
-   *   Ex: ['DB_', 'GuzzleHttp\\']
-   * @param string|array $namespaces
-   *   Ex: 'foobar@1'
-   */
-  public function addPackage(string $package, $namespaces): \PathLoadInterface {
-    $this->addPackageNamespace($package, $namespaces);
-    return $this;
-  }
-
-  /**
    * Declare that a $package includes some list of namespaces.
    *
    * If someone requests a class in $namespace, then we load $package.
@@ -134,7 +118,7 @@ class PathLoad implements \PathLoadInterface {
    * @param string|string[] $namespaces
    *   Ex: 'Super\Cloud\IO\'
    */
-  private function addPackageNamespace(string $package, $namespaces): \PathLoadInterface {
+  public function addPackage(string $package, $namespaces): \PathLoadInterface {
     $namespaces = (array) $namespaces;
     foreach ($namespaces as $namespace) {
       $this->availableNamespaces[$namespace][$package] = $package;
