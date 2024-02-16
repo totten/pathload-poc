@@ -3,7 +3,8 @@
 ## Take the library folders in `./lib`. Conver them to `*.phar` and `*.php` builds.
 
 EXAMPLES=$PWD
-DIST=$PWD/dist
+IN_DIR="$PWD/lib"
+OUT_DIR="$PWD/lib"
 MAIN=$(dirname "$EXAMPLES")
 
 function PHAR() {
@@ -12,17 +13,15 @@ function PHAR() {
 
 set -ex
 
-if [ ! -d "$DIST" ]; then
-  mkdir "$DIST"
+if [ ! -d "$OUT_DIR" ]; then
+  mkdir "$OUT_DIR"
 fi
 
-cp "$MAIN/dist/pathload-latest.php" "$EXAMPLES/dist/pathload.php"
-
 for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'corelib@1.6.0' 'extralib@1.0.0' 'extralib@1.1.0' ; do
-  pushd "lib/$pkg"
-    [ -f "$DIST/$pkg.phar" ] && rm -f "$DIST/$pkg.phar" || true
+  pushd "$IN_DIR/$pkg"
+    [ -f "$OUT_DIR/$pkg.phar" ] && rm -f "$OUT_DIR/$pkg.phar" || true
     find -name '*~' -delete
-    PHAR pack -f "$DIST/$pkg.phar" -s "../empty-stub.php" .
-    php $MAIN/scripts/concat-php.php $( find -name '*.php' | grep -v pathload.php ) >"$DIST/$pkg.php"
+    PHAR pack -f "$OUT_DIR/$pkg.phar" -s "../empty-stub.php" .
+    php $MAIN/scripts/concat-php.php $( find -name '*.php' | grep -v pathload.php ) >"$OUT_DIR/$pkg.php"
   popd
 done

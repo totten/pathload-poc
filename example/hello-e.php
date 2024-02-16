@@ -2,10 +2,10 @@
 <?php
 
 // Enable Pathload API.
-($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/dist/pathload.php');
-// Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
-// Note there's a transitive dependency on 'corelib@1' which is handled automatically.
-pathload()->addSearchDir(__DIR__ . '/dist')->addPackage('extralib@1', 'Example\\');
+($GLOBALS['_PathLoad'][0] ?? require dirname(__DIR__) . '/dist/pathload-0.php');
+
+// Setup a batch of oddball libraries
+require __DIR__ . '/monorepo-1.4.0/monorepo.php';
 
 // Sneaky - we declared dependence on "extralib@1" but actually used a resource from transitive-dependency "corelib@1".
-Example\CoreLib::greet();
+Mono\ArrayStuff\ArrayStuff::loopSomething();
