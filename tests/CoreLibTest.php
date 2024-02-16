@@ -13,7 +13,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'))
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill())
       ->addSearchDir($libDir)
       ->loadPackage('corelib@1');
 
@@ -33,7 +33,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -51,7 +51,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'php',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -70,7 +70,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.6.0' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -86,7 +86,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'dir',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -106,7 +106,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.0.0' => 'dir',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -129,7 +129,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'dir',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
     pathload()->addPackage('corelib@1', 'Example\\');
 
@@ -152,7 +152,7 @@ class CoreLibTest extends PathLoadTestCase {
       'corelib@1.2.3' => 'dir',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
     pathload()->addPackage('corelib@1', 'Example\\');
 

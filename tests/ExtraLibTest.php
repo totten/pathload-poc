@@ -10,7 +10,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'extralib@1.0.0' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
 
     pathload()
       ->addSearchDir($libDir)
@@ -38,7 +38,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'corelib@1.6.0' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
 
     pathload()
       ->addSearchDir($libDirA)
@@ -67,7 +67,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'extralib@1.0.0' => 'php',
     ]);
 
-    ($GLOBALS['_PathLoad']['top'] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
 
     pathload()
       ->addSearchDir($libDirA)
@@ -93,7 +93,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'extralib@1.0.0' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad'][0] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad'][0] ?? require currentPolyfill());
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.
@@ -117,7 +117,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'extralib@1.0.0' => 'phar',
     ]);
 
-    ($GLOBALS['_PathLoad'][0] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad'][0] ?? require currentPolyfill());
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.
@@ -141,7 +141,7 @@ class ExtraLibTest extends PathLoadTestCase {
       'extralib@1.0.0' => 'dir',
     ]);
 
-    ($GLOBALS['_PathLoad'][0] ?? require srcPath('dist/pathload-latest.php'));
+    ($GLOBALS['_PathLoad'][0] ?? require currentPolyfill());
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.

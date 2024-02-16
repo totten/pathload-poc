@@ -20,6 +20,11 @@ function srcPath(?string $subPath = NULL): string {
   return $path;
 }
 
+function currentPolyfill() {
+  return srcPath('dist/pathload-latest.php');
+  // return srcPath('src/polyfill-dev.php');
+}
+
 /**
  * Build a directory with a set of libraries.
  *
