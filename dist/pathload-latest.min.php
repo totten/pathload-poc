@@ -138,6 +138,7 @@ namespace PathLoad\V0 {
       public $majorName;
       public $version;
       public $type;
+      public $reloadable = FALSE;
     }
     class Scanner {
       public $allRules = [];
@@ -357,9 +358,14 @@ namespace PathLoad\V0 {
           }
         } while ($foundPackages);
           }
-      public function loadPackage(string $majorName): ?string {
+      public function loadPackage(string $majorName, bool $reload = FALSE): ?string {
         if (isset($this->loadedPackages[$majorName])) {
-          return $this->loadedPackages[$majorName]->version;
+          if ($reload && $this->loadedPackages[$majorName]->reloadable) {
+            $this->scanner->reset();
+          }
+          else {
+            return $this->loadedPackages[$majorName]->version;
+          }
         }
         $this->scanAvailablePackages(explode('@', $majorName, 2)[0], $this->availablePackages);
         if (!isset($this->availablePackages[$majorName])) {
@@ -403,6 +409,9 @@ namespace PathLoad\V0 {
         }
       }
       public function activatePackage(string $majorName, ?string $dir, array $config): \PathLoadInterface {
+        if (isset($config['reloadable'])) {
+          $this->loadedPackages[$majorName]->reloadable = $config['reloadable'];
+        }
         if (!isset($config['autoload'])) {
           return $this;
         }
