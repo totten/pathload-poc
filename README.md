@@ -23,8 +23,9 @@ The challenge for these PHP application-modules is that they must load one versi
 
 PathLoad is a protocol where multiple parties (*modules; frameworks; operating systems*) may independently distribute the same libraries -- with old versions yielding to newer replacements. It can be retrofitted into existing platforms. Multiple module-developers may ship the same libraries. Site-builders and security-tools may deploy updated libraries without modifying the application-modules. You simply copy an updated library onto the search-path.
 
-The project is presented as proof-of-concept. Its APIs should work as advertised, and it includes tests. But there are complementary topics for further investigation -- especially:
+The project is presented as proof-of-concept. Development is heavily test based, and APIs should do what they say; but it's still novel terrain. Some areas for further consideration include:
 
+* [Issues and adaptations](doc/issues.md)
 * Benchmarking and optimization
 * Build and distribution of library archives (esp [adaptating](https://github.com/humbug/php-scoper) existing libraries to support `MAJOR` version coexistence)
 
