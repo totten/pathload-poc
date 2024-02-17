@@ -86,4 +86,6 @@ class Package {
    */
   public $type;
 
+  public $reloadable = FALSE;
+
 }
