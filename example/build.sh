@@ -17,7 +17,7 @@ if [ ! -d "$OUT_DIR" ]; then
   mkdir "$OUT_DIR"
 fi
 
-for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'corelib@1.6.0' 'extralib@1.0.0' 'extralib@1.1.0' 'retrolib@1.0.0' 'retrolib@1.1.0' ; do
+for pkg in 'corelib@1.0.0' 'corelib@1.2.3' 'corelib@1.6.0' 'extralib@1.0.0' 'extralib@1.1.0' 'retrolib@1.0.0' 'retrolib@1.1.0' 'reloadable@1.0.0' 'reloadable@1.3.0' ; do
   pushd "$IN_DIR/$pkg"
     [ -f "$OUT_DIR/$pkg.phar" ] && rm -f "$OUT_DIR/$pkg.phar" || true
     find -name '*~' -delete
