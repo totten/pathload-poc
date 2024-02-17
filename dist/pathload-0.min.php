@@ -75,7 +75,7 @@ namespace {
 namespace PathLoad\V0 {
   if (!class_exists('PathLoad')) {
     function doRequire(string $file) {
-      require_once $file;
+        require_once $file;
     }
     class Versions implements \ArrayAccess {
       public $top;
@@ -143,18 +143,18 @@ namespace PathLoad\V0 {
       public $allRules = [];
       public $newRules = [];
       public function addRule(array $rule): void {
-        $id = static::id($rule);
+            $id = static::id($rule);
         $this->newRules[$id] = $this->allRules[$id] = $rule;
       }
       public function reset(): void {
         $this->newRules = $this->allRules;
-      }
+          }
       public function scan(string $packageHint): \Generator {
         yield from [];
         foreach (array_keys($this->newRules) as $id) {
           $searchRule = $this->newRules[$id];
           if ($searchRule['package'] === '*' || $searchRule['package'] === $packageHint) {
-            unset($this->newRules[$id]);
+                    unset($this->newRules[$id]);
             if (isset($searchRule['glob'])) {
               foreach ((array) glob($searchRule['glob']) as $file) {
                 if (($package = Package::create($file)) !== NULL) {
@@ -272,14 +272,14 @@ namespace PathLoad\V0 {
       public $psr4;
       public static function create(int $version, ?\PathLoadInterface $old = NULL) {
         if ($old !== NULL) {
-          spl_autoload_unregister([$old, 'loadClass']);
+          $old->unregister();
         }
         $new = new static();
         $new->version = $version;
         $new->scanner = new Scanner();
         $new->psr0 = new Psr0Loader();
         $new->psr4 = new Psr4Loader();
-        spl_autoload_register([$new, 'loadClass']);
+        $new->register();
         if ($old === NULL) {
           $baseDirs = getenv('PHP_PATHLOAD') ? explode(PATH_SEPARATOR, getenv('PHP_PATHLOAD')) : [];
           foreach ($baseDirs as $baseDir) {
@@ -287,7 +287,7 @@ namespace PathLoad\V0 {
           }
         }
         else {
-          foreach ($old->scanner->allRules as $rule) {
+                foreach ($old->scanner->allRules as $rule) {
             $new->scanner->addRule($rule);
           }
           $new->loadedPackages = $old->loadedPackages;
@@ -297,6 +297,14 @@ namespace PathLoad\V0 {
           }
         }
         return new Versions($new);
+      }
+      public function register(): \PathLoadInterface {
+        spl_autoload_register([$this, 'loadClass']);
+        return $this;
+      }
+      public function unregister(): \PathLoadInterface {
+        spl_autoload_unregister([$this, 'loadClass']);
+        return $this;
       }
       public function reset(): \PathLoadInterface {
         $this->scanner->reset();
@@ -348,7 +356,7 @@ namespace PathLoad\V0 {
             }
           }
         } while ($foundPackages);
-      }
+          }
       public function loadPackage(string $majorName): ?string {
         if (isset($this->loadedPackages[$majorName])) {
           return $this->loadedPackages[$majorName]->version;

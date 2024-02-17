@@ -20,7 +20,8 @@ class PathLoad implements \PathLoadInterface {
    * Packages are loaded lazily. Once loaded, the data is moved to $loadedPackages.
    *
    * @var Package[]
-   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
+   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar',
+   *   ...)]
    * @internal
    */
   public $availablePackages = [];
@@ -29,10 +30,10 @@ class PathLoad implements \PathLoadInterface {
    * List of packages that have already been resolved.
    *
    * @var Package[]
-   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar', ...)]
-   *   Note: If PathLoad version is super-ceded, then the loadedPackages may be instances of
-   *   an old `Package` class. Be mindful of duck-type compatibility.
-   *   We don't strictly need to retain this data, but it feels it'd be handy for debugging.
+   *   Ex: ['cloud-file-io@1' => new Package('/usr/share/php-pathload/cloud-file-io@1.2.3.phar',
+   *   ...)] Note: If PathLoad version is super-ceded, then the loadedPackages may be instances of
+   *   an old `Package` class. Be mindful of duck-type compatibility. We don't strictly need to
+   *   retain this data, but it feels it'd be handy for debugging.
    * @internal
    */
   public $loadedPackages = [];
@@ -80,7 +81,7 @@ class PathLoad implements \PathLoadInterface {
    */
   public static function create(int $version, ?\PathLoadInterface $old = NULL) {
     if ($old !== NULL) {
-      spl_autoload_unregister([$old, 'loadClass']);
+      $old->unregister();
     }
 
     $new = new static();
@@ -88,7 +89,7 @@ class PathLoad implements \PathLoadInterface {
     $new->scanner = new Scanner();
     $new->psr0 = new Psr0Loader();
     $new->psr4 = new Psr4Loader();
-    spl_autoload_register([$new, 'loadClass']);
+    $new->register();
 
     // The exact protocol for assimilating $old instances may need change.
     // This seems like a fair guess as long as old properties are forward-compatible.
@@ -114,6 +115,16 @@ class PathLoad implements \PathLoadInterface {
     return new Versions($new);
   }
 
+  public function register(): \PathLoadInterface {
+    spl_autoload_register([$this, 'loadClass']);
+    return $this;
+  }
+
+  public function unregister(): \PathLoadInterface {
+    spl_autoload_unregister([$this, 'loadClass']);
+    return $this;
+  }
+
   public function reset(): \PathLoadInterface {
     $this->scanner->reset();
     return $this;
@@ -123,7 +134,8 @@ class PathLoad implements \PathLoadInterface {
    * Append a directory (with many packages) to the search-path.
    *
    * @param string $baseDir
-   *   The path to a base directory (e.g. `/var/www/myapp/lib`) which contains many packages (e.g. `foo@1.2.3.phar` or `bar@4.5.6/autoload.php`).
+   *   The path to a base directory (e.g. `/var/www/myapp/lib`) which contains many packages (e.g.
+   *   `foo@1.2.3.phar` or `bar@4.5.6/autoload.php`).
    */
   public function addSearchDir(string $baseDir): \PathLoadInterface {
     $this->scanner->addRule(['package' => '*', 'glob' => "$baseDir/*@*"]);
