@@ -82,3 +82,62 @@ phase into your plan -- download all modules first, then enable all `lib/` folde
 
 ## Reloadable Libraries
 
+* By default, PathLoad assumes that packages are *not* reloadable. The package must opt-in to allow itself to be reloaded.
+
+    ```php
+    pathload()->activatePackage('reloadable@1', __DIR__, [
+      'reloadable' => TRUE,
+    ]);
+    ```
+
+* In general, reloadable libraries will tend to use anonymous-classes rather than named-classes; and they'll tend
+  to use anonymous-functions rather than named-functions. Or, more precisely, they should be identified by
+  variable-names rather than static symbols.
+
+    ```php
+    // Named function. Non-reloadble.
+    function greet(string $name) {
+      echo "Hello $name\n";
+    }
+    greet("world");
+    ```
+    ```php
+    // Variable function. Reloadable.
+    $greet = function(string $name) {
+      echo "Hello $name\n";
+    }
+    $greet("world");
+    ```
+    ```php
+    // Named class. Non-reloadable.
+    class Greeter {
+      public function greet(string $name) {
+        echo "Hello $name\n";
+      }
+    }
+    $greeter = new Greeter();
+    $greeter->greet("world");
+    ```
+    ```php
+    // Variable class. Reloadable.
+    $class = get_class(new class() {
+      public function greet(string $name) {
+        echo "Hello $name\n";
+      }
+    });
+    $greeter = new $class();
+    $greeter->greet("world");
+    ```
+
+    In theory, you might have a reloadable library where it defines static facades... as long as the
+    static facades defer to dynamic implementations. The signature of the static facade would be
+
+* The PSR-0 and PSR-4 standards map between named-classes and file-paths. In a practical sense, there isn't much point to
+  enabling `psr-0` or `psr-4` in a reloadable library -- because named-classes cannot be reloaded. (*In an abstract way,
+  you can provide a facade of a named-class/named-function. )
+
+* Class autoloading is a feature of named-classes. Reloadable packages must be loaded explicitly, as in:
+
+  ```php
+  pathload()->loadPackage('my-reloadable@1');
+  ```
