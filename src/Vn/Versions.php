@@ -2,7 +2,6 @@
 
 namespace PathLoad\Vn;
 
-
 /**
  * Locate version-compliant instances of PathLoad.
  */
