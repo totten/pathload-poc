@@ -17,12 +17,11 @@
  *
  * @method PathLoadInterface addSearchItem(string $name, string $version, string $file, ?string $type = NULL)
  *
- * (PathLoad v0) Declare knowledge about what packages are available. These provide
- * hints for autoloading.
+ * (PathLoad v0) Add auto-loading hints. If someone requests a class in $namespace, then we load $package.
  *
- * The third argument, `$baseDir`, is experimental
+ * Consecutive/identical calls to addNamespace() are de-duplicated.
  *
- * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
+ * @method PathLoadInterface addNamespace(string $package, $namespaces)
  *
  * (Pathload v0) When you need resources from a package, call loadPackage().
  * This locates the relevant files and loads them.

@@ -162,18 +162,17 @@ class PathLoad implements \PathLoadInterface {
   }
 
   /**
-   * Declare that a $package includes some list of namespaces.
+   * Add auto-loading hints. If someone requests a class in $namespace, then we load $package.
    *
-   * If someone requests a class in $namespace, then we load $package.
+   * Consecutive/identical calls to addNamespace() are de-duplicated.
    *
    * @param string $package
    *   Ex: 'cloud-io@1'
    * @param string|string[] $namespaces
    *   Ex: 'Super\Cloud\IO\'
    */
-  public function addPackage(string $package, $namespaces): \PathLoadInterface {
-    $namespaces = (array) $namespaces;
-    foreach ($namespaces as $namespace) {
+  public function addNamespace(string $package, $namespaces): \PathLoadInterface {
+    foreach ((array) $namespaces as $namespace) {
       $this->availableNamespaces[$namespace][$package] = $package;
     }
     return $this;

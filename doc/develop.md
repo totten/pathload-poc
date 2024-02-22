@@ -14,7 +14,7 @@ function testSomething() {
   ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
 
   // Configuration
-  pathload()->addSearchDir($libDir)->addPackage(...);
+  pathload()->addSearchDir($libDir)->addNamespace(...);
 
   // Usage
   $this->expectOutputLines(['...some text...']);

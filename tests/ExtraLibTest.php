@@ -19,8 +19,8 @@ class ExtraLibTest extends PathLoadTestCase {
 
     pathload()
       ->addSearchDir($libDir)
-      ->addPackage('corelib@1', 'Example\\')
-      ->addPackage('extralib@1', 'Example\\');
+      ->addNamespace('corelib@1', 'Example\\')
+      ->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -48,8 +48,8 @@ class ExtraLibTest extends PathLoadTestCase {
     pathload()
       ->addSearchDir($libDirA)
       ->addSearchDir($libDirB)
-      ->addPackage('corelib@1', 'Example\\')
-      ->addPackage('extralib@1', 'Example\\');
+      ->addNamespace('corelib@1', 'Example\\')
+      ->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -77,8 +77,8 @@ class ExtraLibTest extends PathLoadTestCase {
     pathload()
       ->addSearchDir($libDirA)
       ->addSearchDir($libDirB)
-      ->addPackage('corelib@1', 'Example\\')
-      ->addPackage('extralib@1', 'Example\\');
+      ->addNamespace('corelib@1', 'Example\\')
+      ->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -102,7 +102,7 @@ class ExtraLibTest extends PathLoadTestCase {
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.
-    pathload()->addSearchDir($libDir)->addPackage('extralib@1', 'Example\\');
+    pathload()->addSearchDir($libDir)->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -126,7 +126,7 @@ class ExtraLibTest extends PathLoadTestCase {
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.
-    pathload()->addSearchDir($libDir)->addPackage('extralib@1', 'Example\\');
+    pathload()->addSearchDir($libDir)->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -150,7 +150,7 @@ class ExtraLibTest extends PathLoadTestCase {
 
     // Add "./dist/" to the search-path. Bind "Example\\" to "extralib@1".
     // Note there's a transitive dependency on 'corelib@1' which is handled automatically.
-    pathload()->addSearchDir($libDir)->addPackage('extralib@1', 'Example\\');
+    pathload()->addSearchDir($libDir)->addNamespace('extralib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 

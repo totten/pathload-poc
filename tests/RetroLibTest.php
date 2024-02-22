@@ -19,7 +19,7 @@ class RetroLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
-    pathload()->addPackage('retrolib@1', ['RetroSlash\\', 'RetroScore_']);
+    pathload()->addNamespace('retrolib@1', ['RetroSlash\\', 'RetroScore_']);
 
     return $libDir;
   }

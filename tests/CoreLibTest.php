@@ -35,7 +35,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -53,7 +53,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -72,7 +72,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->expectOutputLines(['hello from corelib v1.6.0']);
     \Example\CoreLib::greet();
@@ -88,7 +88,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDir);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -108,7 +108,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -131,7 +131,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->assertLoaded(['corelib@1' => NULL, 'extralib@1' => NULL]);
 
@@ -154,7 +154,7 @@ class CoreLibTest extends PathLoadTestCase {
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
     pathload()->addSearchDir($libDirA)->addSearchDir($libDirB)->addSearchDir($libDirC);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->expectOutputLines(['hello from corelib v1.6.0']);
     \Example\CoreLib::greet();
@@ -180,7 +180,7 @@ class CoreLibTest extends PathLoadTestCase {
     $this->assertEquals(FALSE, $exists);
 
     pathload()->addSearchDir($libDirC);
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
     $exists = class_exists('\Example\CoreLib');
     $this->assertEquals(TRUE, $exists);
   }
@@ -193,7 +193,7 @@ class CoreLibTest extends PathLoadTestCase {
     ]);
 
     ($GLOBALS['_PathLoad']['top'] ?? require currentPolyfill());
-    pathload()->addPackage('corelib@1', 'Example\\');
+    pathload()->addNamespace('corelib@1', 'Example\\');
 
     $this->expectWarnings[] = "PathLoad: Failed to locate package \"corelib@1\" required for namespace \"Example\\\"";
     pathload()->addSearchDir($libDirA);

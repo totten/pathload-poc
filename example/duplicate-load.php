@@ -8,7 +8,7 @@
 (require __DIR__ . '/../dist/pathload-0.php');
 (require __DIR__ . '/../dist/pathload-1.php');
 
-pathload()->addSearchDir(__DIR__ . '/lib')->addPackage('extralib@1', 'Example\\');
+pathload()->addSearchDir(__DIR__ . '/lib')->addNamespace('extralib@1', 'Example\\');
 
 (require __DIR__ . '/../dist/pathload-0.php');
 (require __DIR__ . '/../dist/pathload-1.php');

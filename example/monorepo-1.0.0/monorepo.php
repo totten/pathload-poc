@@ -8,5 +8,5 @@ pathload()
   ->addSearchItem('mono-file', '1.0.0', __DIR__ . '/file');
 
 pathload()
-  ->addPackage('mono-array@1', 'Mono\\ArrayStuff\\')
-  ->addPackage('mono-file@1', 'Mono\\File\\');
+  ->addNamespace('mono-array@1', 'Mono\\ArrayStuff\\')
+  ->addNamespace('mono-file@1', 'Mono\\File\\');

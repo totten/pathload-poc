@@ -52,7 +52,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
     pathload()->addSearchDir(__DIR__ . '/lib');
 
     // Declare an autoloading rule for `cloud-file-io` v1.x
-    pathload()->addPackage('cloud-file-io@1', 'CloudFileIO\\');
+    pathload()->addNamespace('cloud-file-io@1', 'CloudFileIO\\');
     ```
 
 3. Now, you may reference classes like `\CloudFileIO\Amazon\S3` or `\CloudFileIO\Google\Storage`.
