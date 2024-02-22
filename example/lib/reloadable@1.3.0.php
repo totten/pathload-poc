@@ -1,7 +1,6 @@
 <?php
-namespace Reloadable {
+namespace {
 pathload()->activatePackage('reloadable@1', __DIR__, [
-  'autoload' => [], /* PSR-0 and PSR-4 are not reloadable patterns */
   'reloadable' => TRUE,
 ]);
 

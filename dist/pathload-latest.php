@@ -45,12 +45,11 @@ namespace {
      *
      * @method PathLoadInterface addSearchItem(string $name, string $version, string $file, ?string $type = NULL)
      *
-     * (PathLoad v0) Declare knowledge about what packages are available. These provide
-     * hints for autoloading.
+     * (PathLoad v0) Add auto-loading hints. If someone requests a class in $namespace, then we load $package.
      *
-     * The third argument, `$baseDir`, is experimental
+     * Consecutive/identical calls to addNamespace() are de-duplicated.
      *
-     * @method PathLoadInterface addPackage(string $package, $namespaces, ?string $baseDir = NULL)
+     * @method PathLoadInterface addNamespace(string $package, $namespaces)
      *
      * (Pathload v0) When you need resources from a package, call loadPackage().
      * This locates the relevant files and loads them.
@@ -515,18 +514,17 @@ namespace PathLoad\V0 {
         return $this;
       }
       /**
-       * Declare that a $package includes some list of namespaces.
+       * Add auto-loading hints. If someone requests a class in $namespace, then we load $package.
        *
-       * If someone requests a class in $namespace, then we load $package.
+       * Consecutive/identical calls to addNamespace() are de-duplicated.
        *
        * @param string $package
        *   Ex: 'cloud-io@1'
        * @param string|string[] $namespaces
        *   Ex: 'Super\Cloud\IO\'
        */
-      public function addPackage(string $package, $namespaces): \PathLoadInterface {
-        $namespaces = (array) $namespaces;
-        foreach ($namespaces as $namespace) {
+      public function addNamespace(string $package, $namespaces): \PathLoadInterface {
+        foreach ((array) $namespaces as $namespace) {
           $this->availableNamespaces[$namespace][$package] = $package;
         }
         return $this;
