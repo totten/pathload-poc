@@ -578,6 +578,7 @@ namespace PathLoad\V0 {
        *
        * @param string $majorName
        *   Ex: 'cloud-io@1'
+       * @param bool $reload
        * @return string|NULL
        *   The version# of the loaded package. Otherwise, NULL
        */
@@ -587,6 +588,9 @@ namespace PathLoad\V0 {
             $this->scanner->reset();
           }
           else {
+            if ($reload) {
+              trigger_error("PathLoad: Declined to reload \"$majorName\". Package is not reloadable.", E_USER_WARNING);
+            }
             return $this->loadedPackages[$majorName]->version;
           }
         }

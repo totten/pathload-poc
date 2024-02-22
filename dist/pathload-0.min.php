@@ -364,6 +364,9 @@ namespace PathLoad\V0 {
             $this->scanner->reset();
           }
           else {
+            if ($reload) {
+              trigger_error("PathLoad: Declined to reload \"$majorName\". Package is not reloadable.", E_USER_WARNING);
+            }
             return $this->loadedPackages[$majorName]->version;
           }
         }
