@@ -1,4 +1,5 @@
 <?php
+//phpcs:disable
 //INTERNAL: This template is used to construct the final polyfill. See also: `scripts/compile.php`
 /*
 //INCLUDE:LICENSE//
