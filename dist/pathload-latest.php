@@ -1,4 +1,5 @@
 <?php
+//phpcs:disable
 /*
 PHP PathLoad (MIT License)
 Copyright (c) 2022-2024 CiviCRM LLC
