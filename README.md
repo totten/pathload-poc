@@ -1,6 +1,6 @@
 # PHP PathLoad (Proof of concept)
 
-This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*in the sense of WordPress plugins, Drupal 7 modules, Backdrop modules, etc*).
+This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*WordPress plugins, Drupal 7 modules, Backdrop modules, etc*) and PHP libraries (*string-utilities, file-formatters, network-clients, etc*).
 
 Classes are loaded from a _search-path_ (`PHP_PATHLOAD`) with priority based on _version-number_. For example, the *search-path* might list three locations:
 
@@ -27,11 +27,11 @@ The project is presented as proof-of-concept. Development is heavily test based,
 
 * [Issues and adaptations](doc/issues.md)
 * Benchmarking and optimization
-* Build and distribution of library archives (esp [adaptating](https://github.com/humbug/php-scoper) existing libraries to support `MAJOR` version coexistence)
+* Build and distribution of library archives (esp [adapting](https://github.com/humbug/php-scoper) existing libraries to support `MAJOR` version coexistence)
 
-## Usage (Module Developer)
+## Usage (Application/Module Developer)
 
-Suppose you are developing an application-module for WP/D7 that requires a library called `cloud-file-io` (`cloud-file-io@1.2.3`). Here's how to use it:
+Suppose you are developing an application or application-module (WP/D7-style) that requires a library called `cloud-file-io` (`cloud-file-io@1.2.3`). Here's how to use it:
 
 1. Download `pathload-0.php` and `cloud-file-io@1.2.3.phar` into your library folder (`$MY_MODULE/lib/`).
 
@@ -42,7 +42,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
    wget https://example.com/download/cloud-file-io@1.2.3.phar -O cloud-file-io@1.2.3.phar
     ```
 
-2. In your application-module:
+2. In your applicatin or application-module:
 
     ```php
     // Enable the pathload polyfill.
@@ -64,7 +64,7 @@ Suppose you are developing an application-module for WP/D7 that requires a libra
 
 ## Usage (Administrator)
 
-If you are managing a system with many modules, then you may wish deploy your own updates (without directly editing
+If you are managing a system with many modules, then you may wish to deploy your own updates (without directly editing
 the upstream modules). Here's how:
 
 1. Create a new folder (eg `/usr/local/share/php-pathload`) and add your new `cloud-file-io@1.8.0.phar`:
@@ -84,7 +84,7 @@ the upstream modules). Here's how:
 ## Usage (Library Distributor)
 
 Let's consider an example library, `cloud-file-io@1.2.3`.  When packaging for distribution, you could provide
-this library in a few formats:
+this library in any of these formats:
 
 * __PHP Source File__ (`cloud-file-io@1.2.3.php`): This is just a plain old PHP file with some `function`s or `class`es.
 * __PHP Archive File__ (`cloud-file-io@1.2.3.phar`): A collection of many PHP files. It should define `pathload.main.php` or `pathload.json`.
