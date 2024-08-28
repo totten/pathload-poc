@@ -13,13 +13,43 @@ This document surveys a series of hypothetical issues/complications that could a
    (with later copies replacing earlier copies). Generally, classes/functions with static names are not reloadable,
    but anonymous ones are, and some kinds of metaprogramming may also support reloading.
 
-## Multi-Module Issue/Adaptation
+## Multiple `pathload-N.php` Files
 
 Suppose:
 
 * You have an appilcation-framework with application-modules.
 * It does not specifically support Pathload.
-* Multiple application-modules include the Pathload polyfill. (The versions are identical or conform to succession protocol.)
+* Multiple application-modules include the `pathload-N.php` file.
+
+What happens if you load multiple versions (eg `pathload-0.php` and `pathload-5.php`)? There is a surface-level aspect to address - and a deeper aspect.
+
+On the surface, consider the standard idiom for loading `pathload-N.php` -- what happens when you run this several times?
+
+```php
+/*1*/ ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/lib/pathload-0.php');
+/*2*/ ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/lib/pathload-0.php');
+/*3*/ ($GLOBALS['_PathLoad'][5] ?? require __DIR__ . '/lib/pathload-5.php');
+/*4*/ ($GLOBALS['_PathLoad'][0] ?? require __DIR__ . '/lib/pathload-0.php');
+```
+
+* In the first call, it actually loads `pathload-0.php`.
+* In second call, we already have Pathload v0-compatible implementation. It doesn't load the file.
+* In the third call, it actually loads `pathload-5.php` -- it is the successor to `pathload-0.php`.
+* In the fourth call, it short-circuits. We already have Pathload v0-compatible implementation.
+
+Even if you have 20 calls like this, you only load 1-2 files.
+
+The deeper element is that `pathload.git` (project) needs to be managed quite conservatively. Over the long-term, the cadence of releases should be gradual,
+and the test/QA should incorporate the requirements of "succession" (i.e. ensuring `pathload-5` supplants `pathload-0` while keeping compatibility). This
+requires keeping the scope of `pathload.git` fairly small.
+
+## Multiple Application-Modules
+
+Suppose:
+
+* You have an appilcation-framework with application-modules.
+* It does not specifically support Pathload.
+* Multiple application-modules include the `pathload-N.php` file. (The versions of `pathload-N.php` are identical or compatible.)
 * Module A includes `module-a/lib/cloud-file-io@1.0.0`
 * Module B includes `module-b/lib/cloud-file-io@1.5.0`
 
@@ -36,7 +66,7 @@ Doing otherwise will may lead to incorrect loading (where version `1.0.0` loads 
 
 If you must provide a library that loads during bootstrap, then it should be *reloadable*. (Patterns discussed later.)
 
-## Multi-Activation Issue/Adaptation
+## Multiple Activations
 
 Suppose:
 
@@ -44,7 +74,7 @@ Suppose:
 * Pathload is enabled -- either at framework-level or module-level.
 * Module A includes `module-a/lib/install-util@1.0.0` which is needed during activation.
 * Module B includes `module-b/lib/install-util@1.5.0` which is needed during activation.
-* You already ahve the code for modules A and B -- but you need to activate them.
+* You already have the code for modules A and B -- but you need to activate them.
 
 The way in which you activate may affect correctness. In particular, does activatation involve multiple PHP requests? Compare:
 
@@ -63,7 +93,7 @@ Some adaptations to prevent the problem scenario:
 * Split installation steps across multiple PHP requests.
 * Enable all `lib/` folders from all modules (*active or inactive*) before executing any installation logic.
 
-## Multi-Download Issue/Adaptation
+## Multiple Downloads
 
 This is similar to the Multi-Activation Issue/Adaptation, except in the last assumption.
 
