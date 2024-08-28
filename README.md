@@ -2,13 +2,13 @@
 
 This is a test-bed to examine an alternative mechanism for loading dependencies. It is loosely inspired by the handling of versioned libraries in C and Java but tailored to the environment of PHP application-modules (*WordPress plugins, Drupal 7 modules, Backdrop modules, etc*) and PHP libraries (*string-utilities, file-formatters, network-clients, etc*).
 
-Classes are loaded from a _search-path_ (`PHP_PATHLOAD`) with priority based on _version-number_. For example, the *search-path* might list three locations:
+Libraries are loaded from a _search-path_ (`PHP_PATHLOAD`) with priority based on _version-number_. For example, the *search-path* might list three folders:
 
 * `/var/www/app/addon-1/lib/`
 * `/var/www/app/addon-2/lib/`
 * `/usr/local/share/php-updates/`
 
-Each contains versioned libraries (eg `cloud-file-io@1.2.3`). Libraries may be plain PHP files, PHAR archives, or subdirectories.
+Each folder contains versioned libraries (eg `cloud-file-io@1.2.3`). Libraries may be plain PHP files, PHAR archives, or subdirectories.
 
 * `/var/www/app/addon-1/lib/`
     * `cloud-file-io@1.1.0.php` (*plain file*)
