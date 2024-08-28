@@ -1,5 +1,7 @@
 # Issues and Adaptations
 
+This document surveys a series of hypothetical issues/complications that could arise when using Pathload. For each, we seek adaptations to prevent or resolve the issue.
+
 ## Glossary
 
 * "Package" - Any unit of distributable software
